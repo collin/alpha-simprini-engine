@@ -1,0 +1,67 @@
+@module "AS", ->
+  @Event = new AS.Mixin
+    instance_methods: 
+      _eventNamespacer: /\.(\w+)$/
+      bind: (ev, callback, context) ->
+        if match = ev.match @_eventNamespacer
+          [ev, namespace] = ev.split(".")
+        namespace ?= 'none'
+    
+        calls = @_callbacks ?= {}
+        list = calls[ev] ?= { none: [] }
+    
+        list[namespace] ?= []
+        list[namespace].push [callback, context]
+        this
+    
+      unbind: (ev, callback) ->
+        if !ev
+          delete @_callbacks
+        else if calls = @_callbacks
+          if !callback
+            return this unless calls[ev.split(".")[0]]
+            if match = ev.match @_eventNamespacer
+              [ev, namespace] = ev.split(".")
+              calls[ev][namespace] = []
+            else
+              calls[ev] = { none: [] }
+          else
+            for key, handlers of calls[ev]
+              for handler, index in handlers
+                delete handlers[index] if handler[0] is callback
+                break
+            
+        this
+
+      trigger: (eventName) ->
+        return this unless calls = @_callbacks
+        if eventName.match @_eventNamespacer
+          [eventName, namespace] = eventName.split(".")
+        both = 2
+        while both--
+          ev = if both
+            eventName
+          else
+            'all'
+          if list = calls[ev]
+            if namespace and ev isnt 'all'
+              if list[namespace]
+                for handler in list[namespace]
+                  args = if both
+                    Array::slice.call(arguments, 1)
+                  else
+                    arguments
+                  handler[0].apply(handler[1] || this, args)            
+            else
+              for key, handlers of list
+                for handler in handlers
+                  args = if both
+                    Array::slice.call(arguments, 1)
+                  else
+                    arguments
+                  handler[0].apply(handler[1] || this, args)
+        this
+
+# _.extend(Backbone.Model::, EventExtensions)
+# _.extend(Backbone.Collection::, EventExtensions)
+# _.extend(Backbone.View::, EventExtensions)

@@ -1,0 +1,22 @@
+{
+  "bundle_dir": "app/assets/javascripts/",
+  "bundles": {
+      "bundle": [
+        ["jquery", "1.5"],
+        ["jquery.rails"],
+        ["underscore"],
+        ["backbone", "0.5.3"],
+        ["coffeekup", "11-08-09"],
+        ["satisfy"],
+        ["raphael", "1.5.2"],
+        ["raphael.blur", "0.1"],
+        ["raphael.primitives", "0.2"],
+        ["jquery.event.drag", "2.0"],
+        ["jquery.event.drop", "2.0"],
+        ["jquery.hotkeys"]
+      ],
+      
+      "qunit": ["qunit"]
+  }
+}
+
