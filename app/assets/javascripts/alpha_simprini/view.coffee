@@ -10,7 +10,7 @@ module "AS", ->
     
     klass_string: (parts=[]) ->
       if @constructor is AS.View
-        parts.push "APView"
+        parts.push "ASView"
         parts.reverse().join "."
       else
         parts.push @constructor.name

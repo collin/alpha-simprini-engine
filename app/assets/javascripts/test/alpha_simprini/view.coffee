@@ -1,18 +1,18 @@
 module "AS.View"
 test "::klass_string()", ->
-  equal new AS.View().klass_string(), "APView", "basic klass_string is APView"
+  equal new AS.View().klass_string(), "ASView", "basic klass_string is ASView"
   
   class SomeView extends AS.View
   
-  equal new SomeView().klass_string(), "APView.SomeView", "subclasses include parent class string"
+  equal new SomeView().klass_string(), "ASView.SomeView", "subclasses include parent class string"
     
 test "::element_string()", ->
-  equal new AS.View().element_string(), "div.APView", "defaults to a div + klass_string"
-  equal new AS.View(tagName:"tagname").element_string(), "tagname.APView", "allows setting of a tag"
+  equal new AS.View().element_string(), "div.ASView", "defaults to a div + klass_string"
+  equal new AS.View(tagName:"tagname").element_string(), "tagname.ASView", "allows setting of a tag"
   
   model = {cid: "cid"}
   
-  equal new AS.View(model:model).element_string(), "div.APView#cid.Object", "uses the cid/class of an associated model as the dom id/class"
+  equal new AS.View(model:model).element_string(), "div.ASView#cid.Object", "uses the cid/class of an associated model as the dom id/class"
 
 test "::build_element()", ->
   ok new AS.View().build_element().is(new AS.View().element_string()), "uses jQuery.satisfy to build the element"

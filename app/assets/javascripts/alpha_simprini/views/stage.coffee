@@ -1,6 +1,7 @@
 @module "AS.Views", ->
-  class @Stage extends Backbone.View
-    canvas_class: AS.Views.Canvas
+  class @Stage extends @Panel
       
     constructor: ->
-      @canvas = @canvas_class
+      super
+      @canvas ?= new AS.Views.Canvas
+      @el.append @canvas.el

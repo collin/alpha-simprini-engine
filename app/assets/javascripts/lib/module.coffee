@@ -1,4 +1,4 @@
-# Extended to allowy "Nested.Modules"
+# Extended to allow "Nested.Modules"
 window.module = (name, fn) ->
   [name, more...] = name.split "."
   if not @[name]?
