@@ -1,7 +1,7 @@
 @module "AS.Views", ->
   class @Stage extends @Panel
-      
-    constructor: ->
+    canvas_class: AS.Views.Canvas
+    initialize: (config) ->
       super
-      @canvas ?= new AS.Views.Canvas
+      @canvas ?= new @canvas_class
       @el.append @canvas.el

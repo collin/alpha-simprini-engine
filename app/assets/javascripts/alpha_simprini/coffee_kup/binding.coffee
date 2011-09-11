@@ -1,11 +1,11 @@
 module "AS.CK", ->
   @Binding =
-    bind: (model, property, getter) ->
+    binding: (model, property, getter) ->
       id = AS.CK.Helpers.autoId()
       model.bind "destroy", -> id.query().remove()
       if getter
-        model.bind "change:#{property}", -> id.query().text getter.call(model.get(property)) || ""
-        span id: id.string, -> getter.call(model.get(property))      
+        model.bind "change:#{property}", -> id.query().text getter.call(this, model.get(property)) || ""
+        span id: id.string, -> getter.call(this, model.get(property))      
       else
         model.bind "change:#{property}", -> id.query().text model.get(property) || ""
         span id: id.string, -> model.get(property)
@@ -23,19 +23,58 @@ module "AS.CK", ->
         model.set data
       input _.extend(options, id: id.string, value: model.get property)
     
-    bind_collection: (container_tagname, collection, templateName) ->
+    bind_collection: (container_tag, collection, templateName) ->
+      # DONT FORGET TO COMBINE LOCALS AS NEEDED
+      
       id = AS.CK.Helpers.autoId()
       
-      collection.bind "add", (item) =>
-        console.error "FIXME: add item at correct position"
-        id.query().append CoffeeKup.renderTemplate(templateName, this, item: item)
-  
-      collection.bind "remove", (item) ->
-        id.query().find("[id=#{item.cid}]").remove()
+      # Unbind before you rebind, or you'll be very :(
+      # As you will have a lot of templates being added EVERYWHERE
       
-      tag container_tagname, id: id.string, ->
-        for item in collection.models
-          text CoffeeKup.renderTemplate(templateName, this, item: item)
+      collection.unbind "add.#{templateName}-bind_collection"
+      collection.bind "add.#{templateName}-bind_collection", (item) =>
+        not_wanted = id.query().find("[data-cid=#{item.cid}]")
+        if not_wanted[0]
+          debugger
+          console.error "Why u add", item, "to", collection, "again?"
+          return
+        if _.isFunction(templateName)
+          console.error "ADDING w/o named template unimplemented sucka"
+        else
+          content = @context.render(templateName, _.extend(data.locals, item:item))
+          index = collection.indexOf(item)
+          container = id.query()
+          siblings = container.children()
+          if siblings.get(0) is undefined or siblings.get(index) is undefined
+            container.append(content)
+          else
+            $(siblings.get(index)).before(content)
+
+      collection.unbind "remove.#{templateName}-bind_collection"  
+      collection.bind "remove.#{templateName}-bind_collection", (item) ->
+        console.log "remove", item, "from", collection
+        not_wanted = id.query().find("[data-cid=#{item.cid}]")
+        if not_wanted[0] is undefined
+          console.error "Could not find element to remove."
+        not_wanted.remove()
+      
+      if container_tag.constructor is String
+        container_tag = [container_tag, id:id.string]
+      else
+        container_tag[1] ?= {}
+        container_tag[1].id = id.string
+      
+      if _.isFunction(templateName)
+        container_tag.push -> 
+          for item in collection.models
+            templateName(item)
+      else      
+        container_tag.push ->
+          for item in collection.models
+            # Combine locals
+            text @context.render(templateName, _.extend(data.locals, item:item))
+      
+      tag.apply this, container_tag
     
     bound_select: (model, property, options, option_value_key, config={}) ->
       id = AS.CK.Helpers.autoId()

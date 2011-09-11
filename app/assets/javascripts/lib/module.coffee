@@ -7,6 +7,9 @@ window.module = (name, fn) ->
     @[name].module = window.module
   
   if more[0] is undefined
-    fn.call(@[name])
+    if fn is undefined
+      @[name]
+    else
+      fn.call(@[name])
   else
     @[name].module more.join("."), fn

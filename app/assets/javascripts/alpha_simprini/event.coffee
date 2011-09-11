@@ -1,7 +1,7 @@
 @module "AS", ->
   @Event = new AS.Mixin
     instance_methods: 
-      _eventNamespacer: /\.(\w+)$/
+      _eventNamespacer: /\.([\w-_]+)$/
       bind: (ev, callback, context) ->
         if match = ev.match @_eventNamespacer
           [ev, namespace] = ev.split(".")
@@ -27,9 +27,12 @@
               calls[ev] = { none: [] }
           else
             for key, handlers of calls[ev]
-              for handler, index in handlers
-                delete handlers[index] if handler[0] is callback
-                break
+              calls[ev][key] = _(handlers).reject (handler) -> handler[0] is callback
+              # for handler, index in handlers
+              #   delete handlers[index] if handler[0] is callback
+              #   break
+              # # Delete leaves around [undefined] nonsense
+              # cals[ev][key] = _.compact(handlers)
             
         this
 

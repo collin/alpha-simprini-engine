@@ -5,7 +5,7 @@ test "All", ->
   
 test "has_many", ->
   class AS.HasManyModel extends AS.Model
-    @has_many 'things', model_name:"AS.HadModel"
+    @has_many 'things', model: -> "AS.HadModel"
   class AS.HadModel extends AS.Model
   
   deepEqual AS.HasManyModel.associations, ["things"], "stores the association in the association list"

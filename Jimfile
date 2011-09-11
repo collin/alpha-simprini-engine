@@ -2,6 +2,7 @@
   "bundle_dir": "app/assets/javascripts/",
   "bundles": {
       "bundle": [
+        ["msgpack", "1.05"],
         ["jquery", "1.5"],
         ["jquery.rails"],
         ["underscore"],

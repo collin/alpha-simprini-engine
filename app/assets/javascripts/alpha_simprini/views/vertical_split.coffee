@@ -1,8 +1,7 @@
 module "AS.Views", ->
   class @VerticalSplit extends AS.View
 
-    constructor: (args) ->
-      super
+    initialize: () ->
       @top ?= new AS.Views.Panel
       @bar ?= new AS.Views.Splitter
       @bottom ?= new AS.Views.Panel

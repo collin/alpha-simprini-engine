@@ -1,6 +1,7 @@
 module AlphaSimpriniEngine
   require "inherited_resources"
   require "alpha_simprini/page"
+  require "alpha_simprini/packer"
   
   class Engine < Rails::Engine
     config.autoload_paths += %w(#{config.root}/app)
