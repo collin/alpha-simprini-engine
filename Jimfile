@@ -4,8 +4,9 @@
       "bundle": [
         ["msgpack", "1.05"],
         ["jquery", "1.5"],
+        ["jquery.mousewheel", "3.0.2"],
         ["jquery.rails"],
-        ["underscore"],
+        ["underscore", "1.1.7"],
         ["backbone", "0.5.3"],
         ["coffeekup", "11-08-09"],
         ["satisfy"],

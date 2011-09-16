@@ -1,4 +1,5 @@
 #= require bundle
+#= require ./lib/string
 #= require ./lib/module
 #= require ./alpha_simprini/mixin
 #= require ./alpha_simprini/delegate

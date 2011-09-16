@@ -19,7 +19,7 @@ class Backbone::Model
     end
   end
   
-  def boilerplate
+  def spool_boilerplate
     bp = []
     bp << %|module "#{@namespace}", ->|
     bp << %|class #{coffee_path} extends #{@parent}|
@@ -36,6 +36,12 @@ class Backbone::Model
         bp << %|  @belongs_to "#{name}"|
       end
     end
+    bp
+  end
+  
+  
+  def boilerplate
+    bp = spool_boilerplate
     bp << %||
     bp << %||
     bp.join("\n")

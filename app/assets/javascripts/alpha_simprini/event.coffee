@@ -19,12 +19,17 @@
           delete @_callbacks
         else if calls = @_callbacks
           if !callback
-            return this unless calls[ev.split(".")[0]]
-            if match = ev.match @_eventNamespacer
-              [ev, namespace] = ev.split(".")
-              calls[ev][namespace] = []
+            if ev[0] is "."
+              namespace = ev.slice(1)
+              for events, namespaces of calls
+                events[namespace] = []
             else
-              calls[ev] = { none: [] }
+              return this unless calls[ev.split(".")[0]]
+              if match = ev.match @_eventNamespacer
+                [ev, namespace] = ev.split(".")
+                calls[ev][namespace] = []
+              else
+                calls[ev] = { none: [] }
           else
             for key, handlers of calls[ev]
               calls[ev][key] = _(handlers).reject (handler) -> handler[0] is callback

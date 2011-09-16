@@ -1,3 +1,17 @@
+# module "AS", ->
+#   class: (value) ->
+#     @el.removeClass(@prior)
+#     @el.addClass(value)
+#     @prior = value
+#     
+#   default: (value) ->
+#     @el.attr(value)
+#     
+#   class BindableElement
+# 
+#     constructor: (args) ->
+#       # body...
+# 
 module "AS", ->
   class @View extends @HTML
     AS.Event.extends(this)
@@ -18,6 +32,12 @@ module "AS", ->
     binding: (model, field) ->
       content = $ @text -> model[field]()
       model.bind "change:#{field}", -> content.text model[field]()
+    
+    # bind_style: () ->
+    #   
+    # 
+    # bind_attribute: (emitter, event, ) ->
+    #   
     
     bind_to_collection: (collection, fn) ->
       byCid = {}
@@ -96,16 +116,35 @@ module "AS", ->
           else
             $(selector, @el[0]).die event_name
             $(selector, @el[0]).live event_name, _method
-    
-    
-    
-    # template: ->
-    #   h1 class: "TemplateNotFound", => """
-    #     Template Not Found for view '#{@klass_string()}'
-    #   """
-    # 
-    # appendTo: (object) ->
-    #   if object.hasOwnProperty "el"
-    #     @el.appendTo object.el
-    #   else
-    #     @el.appendTo object
+
+    reset_cycle: (args...) ->
+      delete @_cycles[args.join()] if @_cycles
+
+    cycle: (args...) ->
+      @_cycles ?= {}
+      @_cycles[args.join()] ?= 0
+      count = @_cycles[args.join()] += 1
+      args[count % args.length]
+
+    toggle: ->
+      @button class:"toggle expand"
+      @button class:"toggle collapse"
+        
+    field: (_label, options = {}, fn = ->) ->
+      if _.isFunction options
+        fn = options
+        options = {}
+        
+      @div ->
+        @label _label
+        @input(options)
+        fn?.call(this)
+        
+    choice: (_label, options = {}, fn = ->) ->
+      if _.isFunction options
+        fn = options
+        options = {}
+      options.type = "checkbox"
+      
+      @field _label, options, fn
+

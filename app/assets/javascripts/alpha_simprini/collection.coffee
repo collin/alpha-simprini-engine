@@ -3,8 +3,8 @@ class module("AS").Collection
   AS.Event.extends(this)
   
   @delegate "first", "rest", "last", "compact", "flatten", "without", "union", 
-            "intersection", "difference", "uniq", "zip", "indexOf", 
-            "lastIndexOf", "range", "include", "all", "toArray", to: "models"
+            "intersection", "difference", "uniq", "zip", "indexOf", "find", "detect", "at",
+            "lastIndexOf", "range", "include",  "each", "map", "reject","all", "toArray", to: "models"
   
   @model: -> AS.Model
 

@@ -13,7 +13,10 @@ class module("AS").HTML
 
   text: (text_content) ->
     @span text_content
-
+  
+  raw: (html) ->
+    $(@span()).html(html)
+  
   tag: (name, attrs, content) ->
     @current_node ?= document.createDocumentFragment()
 
