@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.summary     = "A Rails Engine full of Joy used for ALPHA SIMPRINI applications"
   s.description = "Comes with some plugins configured and some coffeescript/css/assets preloaded for JOY"
 
-  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,lib,extras}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
 
   s.add_dependency "rails", "~> 3.1.0"
