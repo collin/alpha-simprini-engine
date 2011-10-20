@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    alpha-simprini-engine (0.0.2)
+    alpha-simprini-engine (0.0.3)
       coffee-rails (~> 3.1.0)
       compass (~> 0.12.alpha)
       erector (~> 0.9.0.pre1)
