@@ -19,7 +19,9 @@ module "AS", ->
         if value is undefined
           AS.All.byCid[@get_attribute(name)]
         else
-          if value.cid
+          if value is null
+            @set_attribute(name, undefined)
+          else if value.cid
             @set_attribute(name, value.cid)
           else if _.isString(value)
             @set_attribute(name, value)
@@ -38,7 +40,9 @@ module "AS", ->
         if value is undefined
           AS.All.byCid[@get_attribute(name)]
         else
-          if value.cid
+          if value is null
+            @set_attribute(name, undefined)
+          else if value.cid
             @set_attribute(name, value.cid)
           else if _.isString(value)
             @set_attribute(name, value)
@@ -58,8 +62,6 @@ module "AS", ->
       @::[name] = (value) ->
         if value is undefined
           @get_attribute(name)
-        else if value is null
-          @set_attribute(name, undefined)
         else
           @set_attribute(name, value)
     
