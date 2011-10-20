@@ -58,6 +58,8 @@ module "AS", ->
       @::[name] = (value) ->
         if value is undefined
           @get_attribute(name)
+        else if value is null
+          @set_attribute(name, undefined)
         else
           @set_attribute(name, value)
     
