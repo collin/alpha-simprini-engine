@@ -32,7 +32,6 @@ class module("AS").HTML
     node.setAttribute(key, value) for key, value of attrs unless attrs is undefined
     @current_node.appendChild node
     
-    
     if text_content
       $(node).text text_content
     else if content
@@ -44,6 +43,7 @@ class module("AS").HTML
     node
   
   within_node: (node, fn) ->
+    node = node[0] if node?.jquery
     prior_node = @current_node
     @current_node = node
     content = fn.call(this)

@@ -29,9 +29,13 @@ module "AS", ->
     
     initialize: ->
     
-    binding: (model, field) ->
-      content = $ @text -> model[field]()
-      model.bind "change:#{field}", -> content.text model[field]()
+    binding: (model, field, fn) ->
+      if fn
+        model.bind "change:#{field}.#{@cid}", fn
+        fn() # call in place so data rendered now
+      else
+        content = $ @text -> model[field]()
+        model.bind "change:#{field}.#{@cid}", -> content.text model[field]()
     
     # bind_style: () ->
     #   
@@ -39,16 +43,35 @@ module "AS", ->
     # bind_attribute: (emitter, event, ) ->
     #   
     
+    unbind_from_collection: (collection) ->
+      $(@current_node).empty()
+      collection.unbind(".#{@cid}")
+    
+    bind_to_selection_collection: (selection_model, collection, fn) ->
+      container = @current_node
+
+      selection_model.bind "change:selected", =>
+        selection = selection_model.selected()
+        previous_selection = selection_model.last('selected')
+
+        if previous_selection
+          @within_node container, ->
+            @unbind_from_collection previous_selection[collection]()
+
+        if selection
+          @within_node container, ->
+            @bind_to_collection selection[collection](), fn
+    
     bind_to_collection: (collection, fn) ->
       byCid = {}
       content_fn = (item) =>
         byCid[item.cid] = $ fn.call(this, item)
-
+      
       container = $ @current_node
 
       collection.models.each content_fn
 
-      collection.bind "add", (item) =>
+      collection.bind "add.#{@cid}", (item) =>
         content = @dangling_content -> content_fn(item)
         index = collection.indexOf(item).value()
         siblings = container.children()
@@ -57,7 +80,7 @@ module "AS", ->
         else
           $(siblings.get(index)).before(content)
 
-      collection.bind "remove", (item) =>
+      collection.bind "remove.#{@cid}", (item) =>
         byCid[item.cid].remove()
         delete byCid[item.cid]
     
@@ -88,13 +111,21 @@ module "AS", ->
     build_element: ->
       @current_node = @[@tag_name](@base_attributes())
 
-    event_splitter: /^([\w:]+)(\{.*\})?\s*(.*)$/
+    event_splitter: /^(@?[\w:]+)(\{.*\})?\s*(.*)$/
   
     delegateEvents: (events) ->
       events ?= @events
       events = events.call(this) if _.isFunction(events)
       for key, method of events
+        if _.isString method
+          options = {}
+        else
+          options = method
+          method = options.method
+          delete options.method
+
         throw new Error("Event \"#{events[key]}\" does not exist") unless method = @[method]
+
         match = key.match @event_splitter
         [__, event_name, guard, selector] = match
         event_name += ".delegateEvents#{@cid}"
@@ -102,20 +133,21 @@ module "AS", ->
         guard = guard.replace(/(\w+):/g, (__, match) -> "\"#{match}\":")
         guard = JSON.parse(guard)
         
-        do (event_name, guard, key, method, selector) =>
+        
+        do (event_name, guard, key, method, options, selector) =>
           _method = (event) =>
             for key, value of guard 
               return unless event[key] is value
             method.apply(this, arguments)
           if selector is ''
             @el.unbind event_name
-            @el.bind event_name, _method
+            @el.bind event_name, _method, options
           else if selector[0] is '@'
             @[selector.slice(1)]?.unbind event_name
             @[selector.slice(1)]?.bind event_name, _method
           else
             $(selector, @el[0]).die event_name
-            $(selector, @el[0]).live event_name, _method
+            $(selector, @el[0]).live event_name, _method, options
 
     reset_cycle: (args...) ->
       delete @_cycles[args.join()] if @_cycles

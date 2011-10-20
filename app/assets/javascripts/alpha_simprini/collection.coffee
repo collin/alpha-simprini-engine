@@ -19,7 +19,7 @@ class module("AS").Collection
     @models = _([]).chain()
     @add(model) for model in given_models
   
-  add: (model, options={}) ->
+  add: (model={}, options={}) ->
     throw new Error("Cannot add model to collection twice.") if @models.include(model).value()
     
     unless model instanceof AS.Model

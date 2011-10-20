@@ -1,22 +1,9 @@
-class Views::Resources::Edit < Views::Resources::Base
+class Views::Resources::Edit < Views::Resources::Form
   def page_title
     "Edit #{resource_name}"
   end
   
-  def body_content
-    form_for resource, url: resource_url(resource) do |form|
-      available_fields.each do |key, value|
-        input(form, key, :text_field)
-      end
-      div class: 'buttons' do
-        form.submit
-      end
-    end
-  end
-  
-  def available_fields
-    resource.fields.reject do |key, value|
-      key.starts_with?("_")
-    end
+  def form(&block)    
+    form_for resource, url: resource_url(resource), &block
   end
 end

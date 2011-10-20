@@ -21,8 +21,8 @@
           if !callback
             if ev[0] is "."
               namespace = ev.slice(1)
-              for events, namespaces of calls
-                events[namespace] = []
+              for event, namespaces of calls
+                namespaces[namespace] = []
             else
               return this unless calls[ev.split(".")[0]]
               if match = ev.match @_eventNamespacer

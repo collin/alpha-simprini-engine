@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'sass-rails', "  ~> 3.1.0"
   s.add_dependency 'coffee-rails', "~> 3.1.0"
   s.add_dependency 'msgpack'
-  
+  s.add_dependency 'compass', "~> 0.12.alpha"
 
   s.add_development_dependency "sqlite3"
 end
