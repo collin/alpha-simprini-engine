@@ -7,8 +7,13 @@ module "AS", ->
       for name, template of @template_source
         @template_source[name] = CoffeeKup.compile(template, locals:yes, hardcode:AS.TemplateHelpers)
       
-      $ => @initialize?()
-
+      $ => 
+        @god_given_key_handlers()
+        @initialize?()
+    
+    god_given_key_handlers: ->
+      jwerty.key 'esc', => @trigger("esc")
+    
     template_source: -> @Templates
 
     view: (constructor, options={}) ->

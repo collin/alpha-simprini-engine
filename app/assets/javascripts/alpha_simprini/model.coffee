@@ -138,4 +138,7 @@ module "AS", ->
       @trigger("destroy")
   
     trigger: () ->
-      AS.Event.instance_methods.trigger.apply this, _(arguments).splice(1, 0, this)
+      args =  [].concat.apply [], arguments
+      args.splice 1, 0, this
+      AS.Event.instance_methods.trigger.apply this, args
+      

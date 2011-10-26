@@ -33,7 +33,7 @@ class module("AS").Collection
     options.at ?= this.length
     index = options.at
     @byCid[model.cid] = @byId[model.id] = model
-    @models.splice index, 0, model
+    @models._wrapped.splice index, 0, model
     @length++
     model.bind("all", @_on_model_event, this)
     model.trigger "add", this, options

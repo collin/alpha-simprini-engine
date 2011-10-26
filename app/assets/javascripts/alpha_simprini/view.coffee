@@ -22,7 +22,8 @@ module "AS", ->
     
     constructor: (config={}) ->
       @cid = _.uniqueId("c")
-      _.extend this, config
+      for key, value in config
+        @[key] = new ViewModel(this, value)
       @_ensure_element()
       @delegateEvents()
       @initialize()
@@ -36,6 +37,7 @@ module "AS", ->
       else
         content = $ @text -> model[field]()
         model.bind "change:#{field}.#{@cid}", -> content.text model[field]()
+        content 
     
     # bind_style: () ->
     #   
@@ -73,7 +75,8 @@ module "AS", ->
 
       collection.bind "add.#{@cid}", (item) =>
         content = @dangling_content -> content_fn(item)
-        index = collection.indexOf(item).value()
+        index = collection.indexOf(item).value?()
+        index ?= 0
         siblings = container.children()
         if siblings.get(0) is undefined or siblings.get(index) is undefined
           container.append(content)
@@ -110,44 +113,28 @@ module "AS", ->
       
     build_element: ->
       @current_node = @[@tag_name](@base_attributes())
-
-    event_splitter: /^(@?[\w:]+)(\{.*\})?\s*(.*)$/
   
-    delegateEvents: (events) ->
-      events ?= @events
-      events = events.call(this) if _.isFunction(events)
-      for key, method of events
-        if _.isString method
-          options = {}
-        else
-          options = method
-          method = options.method
-          delete options.method
+    delegateEvents: () ->
+      if @events
+        @standard_events = new AS.ViewEvents(this, @events)
+        @standard_events.apply_bindings()
+      
+      state_events = _(@constructor::).chain().keys().filter (key) -> 
+        _(key).endsWith("_events")
+      @state_events = {}
+      for key in state_events.value()
+        state = key.replace(/_events$/, '')
+        do (key, state) =>
+          @state_events[state] = new AS.ViewEvents(this, @[key])
+          
+          @["exit_#{state}"] = ->
+            @trigger("exitstate:#{state}")
+            @state_events[state].revoke_bindings()
+          
+          @["enter_#{state}"] = -> 
+            @trigger("enterstate:#{state}")
+            @state_events[state].apply_bindings()
 
-        throw new Error("Event \"#{events[key]}\" does not exist") unless method = @[method]
-
-        match = key.match @event_splitter
-        [__, event_name, guard, selector] = match
-        event_name += ".delegateEvents#{@cid}"
-        guard ?= "{}"
-        guard = guard.replace(/(\w+):/g, (__, match) -> "\"#{match}\":")
-        guard = JSON.parse(guard)
-        
-        
-        do (event_name, guard, key, method, options, selector) =>
-          _method = (event) =>
-            for key, value of guard 
-              return unless event[key] is value
-            method.apply(this, arguments)
-          if selector is ''
-            @el.unbind event_name
-            @el.bind event_name, _method, options
-          else if selector[0] is '@'
-            @[selector.slice(1)]?.unbind event_name
-            @[selector.slice(1)]?.bind event_name, _method
-          else
-            $(selector, @el[0]).die event_name
-            $(selector, @el[0]).live event_name, _method, options
 
     reset_cycle: (args...) ->
       delete @_cycles[args.join()] if @_cycles

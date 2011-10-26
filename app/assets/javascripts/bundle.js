@@ -9905,6 +9905,467 @@ function handler(event) {
 
 })();
 
+// Underscore.string
+// (c) 2010 Esa-Matti Suuronen <esa-matti aet suuronen dot org>
+// Underscore.strings is freely distributable under the terms of the MIT license.
+// Documentation: https://github.com/edtsech/underscore.string
+// Some code is borrowed from MooTools and Alexandru Marasteanu.
+
+// Version 1.1.6
+
+
+(function(root){
+  'use strict';
+
+  if (typeof _ != 'undefined') {
+    var _reverse = _().reverse,
+        _include = _.include;
+  }
+
+  // Defining helper functions.
+
+  var nativeTrim = String.prototype.trim;
+
+  var parseNumber = function(source) { return source * 1 || 0; };
+
+  var strRepeat = function(i, m) {
+    for (var o = []; m > 0; o[--m] = i);
+    return o.join('');
+  };
+
+  var slice = function(a){
+    return Array.prototype.slice.call(a);
+  };
+
+  var defaultToWhiteSpace = function(characters){
+    if (characters) {
+      return _s.escapeRegExp(characters);
+    }
+    return '\\s';
+  };
+
+  var sArgs = function(method){
+    return function(){
+      var args = slice(arguments);
+      for(var i=0; i<args.length; i++)
+        args[i] = args[i] == null ? '' : '' + args[i];
+      return method.apply(null, args);
+    };
+  };
+
+  // sprintf() for JavaScript 0.7-beta1
+  // http://www.diveintojavascript.com/projects/javascript-sprintf
+  //
+  // Copyright (c) Alexandru Marasteanu <alexaholic [at) gmail (dot] com>
+  // All rights reserved.
+
+  var sprintf = (function() {
+    function get_type(variable) {
+      return Object.prototype.toString.call(variable).slice(8, -1).toLowerCase();
+    }
+
+    var str_repeat = strRepeat;
+
+    var str_format = function() {
+      if (!str_format.cache.hasOwnProperty(arguments[0])) {
+        str_format.cache[arguments[0]] = str_format.parse(arguments[0]);
+      }
+      return str_format.format.call(null, str_format.cache[arguments[0]], arguments);
+    };
+
+    str_format.format = function(parse_tree, argv) {
+      var cursor = 1, tree_length = parse_tree.length, node_type = '', arg, output = [], i, k, match, pad, pad_character, pad_length;
+      for (i = 0; i < tree_length; i++) {
+        node_type = get_type(parse_tree[i]);
+        if (node_type === 'string') {
+          output.push(parse_tree[i]);
+        }
+        else if (node_type === 'array') {
+          match = parse_tree[i]; // convenience purposes only
+          if (match[2]) { // keyword argument
+            arg = argv[cursor];
+            for (k = 0; k < match[2].length; k++) {
+              if (!arg.hasOwnProperty(match[2][k])) {
+                throw(sprintf('[_.sprintf] property "%s" does not exist', match[2][k]));
+              }
+              arg = arg[match[2][k]];
+            }
+          } else if (match[1]) { // positional argument (explicit)
+            arg = argv[match[1]];
+          }
+          else { // positional argument (implicit)
+            arg = argv[cursor++];
+          }
+
+          if (/[^s]/.test(match[8]) && (get_type(arg) != 'number')) {
+            throw(sprintf('[_.sprintf] expecting number but found %s', get_type(arg)));
+          }
+          switch (match[8]) {
+            case 'b': arg = arg.toString(2); break;
+            case 'c': arg = String.fromCharCode(arg); break;
+            case 'd': arg = parseInt(arg, 10); break;
+            case 'e': arg = match[7] ? arg.toExponential(match[7]) : arg.toExponential(); break;
+            case 'f': arg = match[7] ? parseFloat(arg).toFixed(match[7]) : parseFloat(arg); break;
+            case 'o': arg = arg.toString(8); break;
+            case 's': arg = ((arg = String(arg)) && match[7] ? arg.substring(0, match[7]) : arg); break;
+            case 'u': arg = Math.abs(arg); break;
+            case 'x': arg = arg.toString(16); break;
+            case 'X': arg = arg.toString(16).toUpperCase(); break;
+          }
+          arg = (/[def]/.test(match[8]) && match[3] && arg >= 0 ? '+'+ arg : arg);
+          pad_character = match[4] ? match[4] == '0' ? '0' : match[4].charAt(1) : ' ';
+          pad_length = match[6] - String(arg).length;
+          pad = match[6] ? str_repeat(pad_character, pad_length) : '';
+          output.push(match[5] ? arg + pad : pad + arg);
+        }
+      }
+      return output.join('');
+    };
+
+    str_format.cache = {};
+
+    str_format.parse = function(fmt) {
+      var _fmt = fmt, match = [], parse_tree = [], arg_names = 0;
+      while (_fmt) {
+        if ((match = /^[^\x25]+/.exec(_fmt)) !== null) {
+          parse_tree.push(match[0]);
+        }
+        else if ((match = /^\x25{2}/.exec(_fmt)) !== null) {
+          parse_tree.push('%');
+        }
+        else if ((match = /^\x25(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?([b-fosuxX])/.exec(_fmt)) !== null) {
+          if (match[2]) {
+            arg_names |= 1;
+            var field_list = [], replacement_field = match[2], field_match = [];
+            if ((field_match = /^([a-z_][a-z_\d]*)/i.exec(replacement_field)) !== null) {
+              field_list.push(field_match[1]);
+              while ((replacement_field = replacement_field.substring(field_match[0].length)) !== '') {
+                if ((field_match = /^\.([a-z_][a-z_\d]*)/i.exec(replacement_field)) !== null) {
+                  field_list.push(field_match[1]);
+                }
+                else if ((field_match = /^\[(\d+)\]/.exec(replacement_field)) !== null) {
+                  field_list.push(field_match[1]);
+                }
+                else {
+                  throw('[_.sprintf] huh?');
+                }
+              }
+            }
+            else {
+              throw('[_.sprintf] huh?');
+            }
+            match[2] = field_list;
+          }
+          else {
+            arg_names |= 2;
+          }
+          if (arg_names === 3) {
+            throw('[_.sprintf] mixing positional and named placeholders is not (yet) supported');
+          }
+          parse_tree.push(match);
+        }
+        else {
+          throw('[_.sprintf] huh?');
+        }
+        _fmt = _fmt.substring(match[0].length);
+      }
+      return parse_tree;
+    };
+
+    return str_format;
+  })();
+
+
+
+  // Defining underscore.string
+
+  var _s = {
+
+    isBlank: sArgs(function(str){
+      return (/^\s*$/).test(str);
+    }),
+
+    stripTags: sArgs(function(str){
+      return str.replace(/<\/?[^>]+>/ig, '');
+    }),
+
+    capitalize : sArgs(function(str) {
+      return str.charAt(0).toUpperCase() + str.substring(1).toLowerCase();
+    }),
+
+    chop: sArgs(function(str, step){
+      step = parseNumber(step) || str.length;
+      var arr = [];
+      for (var i = 0; i < str.length;) {
+        arr.push(str.slice(i,i + step));
+        i = i + step;
+      }
+      return arr;
+    }),
+
+    clean: sArgs(function(str){
+      return _s.strip(str.replace(/\s+/g, ' '));
+    }),
+
+    count: sArgs(function(str, substr){
+      var count = 0, index;
+      for (var i=0; i < str.length;) {
+        index = str.indexOf(substr, i);
+        index >= 0 && count++;
+        i = i + (index >= 0 ? index : 0) + substr.length;
+      }
+      return count;
+    }),
+
+    chars: sArgs(function(str) {
+      return str.split('');
+    }),
+
+    escapeHTML: sArgs(function(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                            .replace(/"/g, '&quot;').replace(/'/g, "&apos;");
+    }),
+
+    unescapeHTML: sArgs(function(str) {
+      return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+    }),
+
+    escapeRegExp: sArgs(function(str){
+      // From MooTools core 1.2.4
+      return str.replace(/([-.*+?^${}()|[\]\/\\])/g, '\\$1');
+    }),
+
+    insert: sArgs(function(str, i, substr){
+      var arr = str.split('');
+      arr.splice(parseNumber(i), 0, substr);
+      return arr.join('');
+    }),
+
+    includes: sArgs(function(str, needle){
+      return str.indexOf(needle) !== -1;
+    }),
+
+    include: function(obj, needle) {
+      if (!_include || (/string|number/).test(typeof obj)) {
+        return this.includes(obj, needle);
+      } else {
+        return _include(obj, needle);
+      }
+    },
+
+    join: sArgs(function(sep) {
+      var args = slice(arguments);
+      return args.join(args.shift());
+    }),
+
+    lines: sArgs(function(str) {
+      return str.split("\n");
+    }),
+
+    reverse: function(obj){
+      if (!_reverse || (/string|number/).test(typeof obj)) {
+        return Array.prototype.reverse.apply(String(obj).split('')).join('');
+      } else {
+        return _reverse.call(_(obj));
+      }
+    },
+
+    splice: sArgs(function(str, i, howmany, substr){
+      var arr = str.split('');
+      arr.splice(parseNumber(i), parseNumber(howmany), substr);
+      return arr.join('');
+    }),
+
+    startsWith: sArgs(function(str, starts){
+      return str.length >= starts.length && str.substring(0, starts.length) === starts;
+    }),
+
+    endsWith: sArgs(function(str, ends){
+      return str.length >= ends.length && str.substring(str.length - ends.length) === ends;
+    }),
+
+    succ: sArgs(function(str){
+      var arr = str.split('');
+      arr.splice(str.length-1, 1, String.fromCharCode(str.charCodeAt(str.length-1) + 1));
+      return arr.join('');
+    }),
+
+    titleize: sArgs(function(str){
+      var arr = str.split(' '),
+          word;
+      for (var i=0; i < arr.length; i++) {
+        word = arr[i].split('');
+        if(typeof word[0] !== 'undefined') word[0] = word[0].toUpperCase();
+        i+1 === arr.length ? arr[i] = word.join('') : arr[i] = word.join('') + ' ';
+      }
+      return arr.join('');
+    }),
+
+    camelize: sArgs(function(str){
+      return _s.trim(str).replace(/(\-|_|\s)+(.)?/g, function(match, separator, chr) {
+        return chr ? chr.toUpperCase() : '';
+      });
+    }),
+
+    underscored: function(str){
+      return _s.trim(str).replace(/([a-z\d])([A-Z]+)/g, '$1_$2').replace(/\-|\s+/g, '_').toLowerCase();
+    },
+
+    dasherize: function(str){
+      return _s.trim(str).replace(/([a-z\d])([A-Z]+)/g, '$1-$2').replace(/^([A-Z]+)/, '-$1').replace(/\_|\s+/g, '-').toLowerCase();
+    },
+
+    trim: sArgs(function(str, characters){
+      if (!characters && nativeTrim) {
+        return nativeTrim.call(str);
+      }
+      characters = defaultToWhiteSpace(characters);
+      return str.replace(new RegExp('\^[' + characters + ']+|[' + characters + ']+$', 'g'), '');
+    }),
+
+    ltrim: sArgs(function(str, characters){
+      characters = defaultToWhiteSpace(characters);
+      return str.replace(new RegExp('\^[' + characters + ']+', 'g'), '');
+    }),
+
+    rtrim: sArgs(function(str, characters){
+      characters = defaultToWhiteSpace(characters);
+      return str.replace(new RegExp('[' + characters + ']+$', 'g'), '');
+    }),
+
+    truncate: sArgs(function(str, length, truncateStr){
+      truncateStr = truncateStr || '...';
+      length = parseNumber(length);
+      return str.length > length ? str.slice(0,length) + truncateStr : str;
+    }),
+
+    /**
+     * _s.prune: a more elegant version of truncate
+     * prune extra chars, never leaving a half-chopped word.
+     * @author github.com/sergiokas 
+     */
+    prune: sArgs(function(str, length, pruneStr){
+      pruneStr = pruneStr || '...';
+      length = parseNumber(length);
+      var pruned = '';
+
+      // Check if we're in the middle of a word
+      if( str.substring(length-1, length+1).search(/^\w\w$/) === 0 )
+        pruned = _s.rtrim(str.slice(0,length).replace(/([\W][\w]*)$/,''));
+      else
+        pruned = _s.rtrim(str.slice(0,length));
+      
+      pruned = pruned.replace(/\W+$/,'');
+      
+      return (pruned.length+pruneStr.length>str.length) ? str : pruned + pruneStr;    
+    	}),
+    
+    words: function(str, delimiter) {
+      return String(str).split(delimiter || " ");
+    },
+
+    pad: sArgs(function(str, length, padStr, type) {
+      var padding = '',
+          padlen  = 0;
+
+      length = parseNumber(length);
+
+      if (!padStr) { padStr = ' '; }
+      else if (padStr.length > 1) { padStr = padStr.charAt(0); }
+      switch(type) {
+        case 'right':
+          padlen = (length - str.length);
+          padding = strRepeat(padStr, padlen);
+          str = str+padding;
+          break;
+        case 'both':
+          padlen = (length - str.length);
+          padding = {
+            'left' : strRepeat(padStr, Math.ceil(padlen/2)),
+            'right': strRepeat(padStr, Math.floor(padlen/2))
+          };
+          str = padding.left+str+padding.right;
+          break;
+        default: // 'left'
+          padlen = (length - str.length);
+          padding = strRepeat(padStr, padlen);;
+          str = padding+str;
+        }
+      return str;
+    }),
+
+    lpad: function(str, length, padStr) {
+      return _s.pad(str, length, padStr);
+    },
+
+    rpad: function(str, length, padStr) {
+      return _s.pad(str, length, padStr, 'right');
+    },
+
+    lrpad: function(str, length, padStr) {
+      return _s.pad(str, length, padStr, 'both');
+    },
+
+    sprintf: sprintf,
+
+    vsprintf: function(fmt, argv){
+      argv.unshift(fmt);
+      return sprintf.apply(null, argv);
+    },
+
+    toNumber: function(str, decimals) {
+      var num = parseNumber(parseNumber(str).toFixed(parseNumber(decimals)));
+      return (!(num === 0 && (str !== "0" && str !== 0))) ? num : Number.NaN;
+    },
+
+    strRight: sArgs(function(sourceStr, sep){
+      var pos =  (!sep) ? -1 : sourceStr.indexOf(sep);
+      return (pos != -1) ? sourceStr.slice(pos+sep.length, sourceStr.length) : sourceStr;
+    }),
+
+    strRightBack: sArgs(function(sourceStr, sep){
+      var pos =  (!sep) ? -1 : sourceStr.lastIndexOf(sep);
+      return (pos != -1) ? sourceStr.slice(pos+sep.length, sourceStr.length) : sourceStr;
+    }),
+
+    strLeft: sArgs(function(sourceStr, sep){
+      var pos = (!sep) ? -1 : sourceStr.indexOf(sep);
+      return (pos != -1) ? sourceStr.slice(0, pos) : sourceStr;
+    }),
+
+    strLeftBack: sArgs(function(sourceStr, sep){
+      var pos = sourceStr.lastIndexOf(sep);
+      return (pos != -1) ? sourceStr.slice(0, pos) : sourceStr;
+    })
+
+  };
+
+  // Aliases
+
+  _s.strip  = _s.trim;
+  _s.lstrip = _s.ltrim;
+  _s.rstrip = _s.rtrim;
+  _s.center = _s.lrpad;
+  _s.ljust  = _s.lpad;
+  _s.rjust  = _s.rpad;
+
+  // CommonJS module is defined
+  if (typeof module !== 'undefined' && module.exports) {
+    // Export module
+    module.exports = _s;
+
+  // Integrate with Underscore.js
+  } else if (typeof root._ !== 'undefined') {
+    root._.mixin(_s);
+
+  // Or define it
+  } else {
+    root._ = _s;
+  }
+
+}(this || window));
+
 //     Backbone.js 0.5.3
 //     (c) 2010 Jeremy Ashkenas, DocumentCloud Inc.
 //     Backbone may be freely distributed under the MIT license.
@@ -16203,104 +16664,487 @@ $special.dropinit = $special.dropstart = $special.dropend = drop;
 
 })(jQuery); // confine scope	
 /*
- * jQuery Hotkeys Plugin
- * Copyright 2010, John Resig
- * Dual licensed under the MIT or GPL Version 2 licenses.
+ * jwerty - Awesome handling of keyboard events
  *
- * Based upon the plugin by Tzury Bar Yochay:
- * http://github.com/tzuryby/hotkeys
+ * jwerty is a JS lib which allows you to bind, fire and assert key combination strings against
+ *  elements and events. It normalises the poor std api into something easy to use and clear.
  *
- * Original idea by:
- * Binny V A, http://www.openjs.com/scripts/events/keyboard_shortcuts/
-*/
-
-(function(jQuery){
-	
-	jQuery.hotkeys = {
-		version: "0.8",
-
-		specialKeys: {
-			8: "backspace", 9: "tab", 13: "return", 16: "shift", 17: "ctrl", 18: "alt", 19: "pause",
-			20: "capslock", 27: "esc", 32: "space", 33: "pageup", 34: "pagedown", 35: "end", 36: "home",
-			37: "left", 38: "up", 39: "right", 40: "down", 45: "insert", 46: "del", 
-			96: "0", 97: "1", 98: "2", 99: "3", 100: "4", 101: "5", 102: "6", 103: "7",
-			104: "8", 105: "9", 106: "*", 107: "+", 109: "-", 110: ".", 111 : "/", 
-			112: "f1", 113: "f2", 114: "f3", 115: "f4", 116: "f5", 117: "f6", 118: "f7", 119: "f8", 
-			120: "f9", 121: "f10", 122: "f11", 123: "f12", 144: "numlock", 145: "scroll", 191: "/", 224: "meta"
-		},
-	
-		shiftNums: {
-			"`": "~", "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", 
-			"8": "*", "9": "(", "0": ")", "-": "_", "=": "+", ";": ": ", "'": "\"", ",": "<", 
-			".": ">",  "/": "?",  "\\": "|"
-		}
-	};
-
-	function keyHandler( handleObj ) {
-		// Only care when a possible input has been specified
-		if ( typeof handleObj.data !== "string" ) {
-			return;
-		}
-		
-		var origHandler = handleObj.handler,
-			keys = handleObj.data.toLowerCase().split(" ");
-	
-		handleObj.handler = function( event ) {
-			// Don't fire in text-accepting inputs that we didn't directly bind to
-			if ( this !== event.target && (/textarea|select/i.test( event.target.nodeName ) ||
-				 event.target.type === "text") ) {
-				return;
-			}
-			
-			// Keypress represents characters, not special keys
-			var special = event.type !== "keypress" && jQuery.hotkeys.specialKeys[ event.which ],
-				character = String.fromCharCode( event.which ).toLowerCase(),
-				key, modif = "", possible = {};
-
-			// check combinations (alt|ctrl|shift+anything)
-			if ( event.altKey && special !== "alt" ) {
-				modif += "alt+";
-			}
-
-			if ( event.ctrlKey && special !== "ctrl" ) {
-				modif += "ctrl+";
-			}
-			
-			// TODO: Need to make sure this works consistently across platforms
-			if ( event.metaKey && !event.ctrlKey && special !== "meta" ) {
-				modif += "meta+";
-			}
-
-			if ( event.shiftKey && special !== "shift" ) {
-				modif += "shift+";
-			}
-
-			if ( special ) {
-				possible[ modif + special ] = true;
-
-			} else {
-				possible[ modif + character ] = true;
-				possible[ modif + jQuery.hotkeys.shiftNums[ character ] ] = true;
-
-				// "$" can be triggered as "Shift+4" or "Shift+$" or just "$"
-				if ( modif === "shift+" ) {
-					possible[ jQuery.hotkeys.shiftNums[ character ] ] = true;
-				}
-			}
-
-			for ( var i = 0, l = keys.length; i < l; i++ ) {
-				if ( possible[ keys[i] ] ) {
-					return origHandler.apply( this, arguments );
-				}
-			}
-		};
-	}
-
-	jQuery.each([ "keydown", "keyup", "keypress" ], function() {
-		jQuery.event.special[ this ] = { add: keyHandler };
-	});
-
-})( jQuery );
+ * This code is licensed under the MIT
+ * For more details, see http://www.opensource.org/licenses/mit-license.php
+ * For more information, see http://github.com/keithcirkel/jwerty
+ *
+ * @author Keith Cirkel ('keithamus') <jwerty@keithcirkel.co.uk>
+ * @license http://www.opensource.org/licenses/mit-license.php
+ * @copyright Copyright © 2011, Keith Cirkel
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ */
+(function (global, exports) {
+    
+    // Helper methods & vars:
+    var $d = global.document
+    ,   $ = (global.jQuery || global.Zepto || global.ender || $d)
+    ,   $$
+    ,   $b
+    ,   ke = 'keydown';
+    
+    function realTypeOf(v, s) {
+        return (v === null) ? s === 'null'
+        : (v === undefined) ? s === 'undefined'
+        : (v.is && v instanceof $) ? s === 'element'
+        : Object.prototype.toString.call(v).toLowerCase().indexOf(s) > 7;
+    }
+    
+    if ($ === $d) {
+        $$ = function (selector, context) {
+            return selector ? $.querySelector(selector, context || $) : $;
+        };
+        
+        $b = function (e, fn) { e.addEventListener(ke, fn, false); };
+        $f = function (e, jwertyEv) {
+            var ret = document.createEvent('Event')
+            ,   i;
+            
+            ret.initEvent(ke, true, true);
+            
+            for (i in jwertyEv) ret[i] = jwertyEv[i];
+            
+            return (e || $).dispatchEvent(ret);
+        }
+    } else {
+        $$ = function (selector, context, fn) { return $(selector || $d, context); };
+        $b = function (e, fn) { $(e).bind(ke + '.jwerty', fn); };
+        $f = function (e, ob) { $(e || $d).trigger($.Event(ke, ob)); };
+    }
+    
+    // Private
+    var _modProps = { 16: 'shiftKey', 17: 'ctrlKey', 18: 'altKey', 91: 'metaKey' };
+    
+    // Generate key mappings for common keys that are not printable.
+    var _keys = {
+        
+        // MOD aka toggleable keys
+        mods: {
+            // Shift key, ⇧
+            '⇧': 16, shift: 16,
+            // CTRL key, on Mac: ⌃
+            '⌃': 17, ctrl: 17,
+            // ALT key, on Mac: ⌥ (Alt)
+            '⌥': 18, alt: 18, option: 18,
+            // META, on Mac: ⌘ (CMD), on Windows (Win), on Linux (Super)
+            '⌘': 91, meta: 91, cmd: 91, 'super': 91, win: 91
+        },
+        
+        // Normal keys
+        keys: {
+            // Backspace key, on Mac: ⌫ (Backspace)
+            '⌫': 8, backspace: 8,
+            // Tab Key, on Mac: ⇥ (Tab), on Windows ⇥⇥
+            '⇥': 9, '⇆': 9, tab: 9,
+            // Return key, ↩
+            '↩': 13, 'return': 13, enter: 13, '⌅': 13,
+            // Pause/Break key
+            'pause': 19, 'pause-break': 19,
+            // Caps Lock key, ⇪
+            '⇪': 20, caps: 20, 'caps-lock': 20,
+            // Escape key, on Mac: ⎋, on Windows: Esc
+            '⎋': 27, escape: 27, esc: 27,
+            // Space key
+            space: 32,
+            // Page-Up key, or pgup, on Mac: ↖
+            '↖': 33, pgup: 33, 'page-up': 33,
+            // Page-Down key, or pgdown, on Mac: ↘
+            '↘': 34, pgdown: 34, 'page-down': 34,
+            // END key, on Mac: ⇟
+            '⇟': 35, end: 35,
+            // HOME key, on Mac: ⇞
+            '⇞': 36, home: 36,
+            // Insert key, or ins
+            ins: 45, insert: 45,
+            // Delete key, on Mac: ⌫ (Delete)
+            del: 45, 'delete': 45,
+            
+            // Left Arrow Key, or ←
+            '←': 37, left: 37, 'arrow-left': 37,
+            // Up Arrow Key, or ↑
+            '↑': 38, up: 38, 'arrow-up': 38,
+            // Right Arrow Key, or →
+            '→': 39, right: 39, 'arrow-right': 39,
+            // Up Arrow Key, or ↓
+            '↓': 40, down: 40, 'arrow-down': 40,
+            
+            // odities, printing characters that come out wrong:
+            // Num-Multiply, or *
+            '*': 106, star: 106, asterisk: 106, multiply: 106,
+            // Num-Plus or +
+            '+': 107, 'plus': 107,
+            // Num-Subtract, or -
+            '-': 109, subtract: 109,
+            //';': 186, //???
+            // = or equals
+            '=': 187, 'equals': 187,
+            // Comma, or ,
+            ',': 188, comma: 188,
+            //'-': 189, //???
+            // Period, or ., or full-stop
+            '.': 190, period: 190, 'full-stop': 190,
+            // Slash, or /, or forward-slash
+            '/': 191, slash: 191, 'forward-slash': 191,
+            // Tick, or `, or back-quote 
+            '`': 192, tick: 192, 'back-quote': 192,
+            // Open bracket, or [
+            '[': 219, 'open-bracket': 219,
+            // Back slash, or \
+            '\\': 220, 'back-slash': 220,
+            // Close backet, or ]
+            ']': 221, 'close-bracket': 221,
+            // Apostraphe, or Quote, or '
+            '\'': 222, quote: 222, apostraphe: 222
+        }
+        
+    };
+    
+    // To minimise code bloat, add all of the NUMPAD 0-9 keys in a loop
+    i = 95, n = 0;
+    while(++i < 106) {
+        _keys.keys['num-' + n] = i;
+        ++n;
+    }
+    
+    // To minimise code bloat, add all of the top row 0-9 keys in a loop
+    i = 47, n = 0;
+    while(++i < 58) {
+        _keys.keys[n] = i;
+        ++n;
+    }
+    
+    // To minimise code bloat, add all of the F1-F25 keys in a loop
+    i = 111, n = 1;
+    while(++i < 136) {
+        _keys.keys['f' + n] = i;
+        ++n;
+    }
+    
+    // To minimise code bloat, add all of the letters of the alphabet in a loop
+    var i = 64;
+    while(++i < 91) {
+        _keys.keys[String.fromCharCode(i).toLowerCase()] = i;
+    }
+    
+    function JwertyCode(jwertyCode) {
+        var i
+        ,   c
+        ,   n
+        ,   z
+        ,   keyCombo
+        ,   optionals
+        ,   jwertyCodeFragment
+        ,   rangeMatches
+        ,   rangeI;
+        
+        // In-case we get called with an instance of ourselves, just return that.
+        if (jwertyCode instanceof JwertyCode) return jwertyCode;
+        
+        // If jwertyCode isn't an array, cast it as a string and split into array.
+        if (!realTypeOf(jwertyCode, 'array')) {
+            jwertyCode = (String(jwertyCode)).replace(/\s/g, '').toLowerCase().
+                match(/(?:\+,|[^,])+/g);
+        }
+        
+        // Loop through each key sequence in jwertyCode
+        for (i = 0, c = jwertyCode.length; i < c; ++i) {
+            
+            // If the key combo at this part of the sequence isn't an array,
+            // cast as a string and split into an array.
+            if (!realTypeOf(jwertyCode[i], 'array')) {
+                jwertyCode[i] = String(jwertyCode[i])
+                    .match(/(?:\+\/|[^\/])+/g);
+            }
+            
+            // Parse the key optionals in this sequence
+            optionals = [], n = jwertyCode[i].length;
+            while (n--) {
+                
+                // Begin creating the object for this key combo
+                var jwertyCodeFragment = jwertyCode[i][n];
+                
+                keyCombo = {
+                    jwertyCombo: String(jwertyCodeFragment),
+                    shiftKey: false,
+                    ctrlKey: false,
+                    altKey: false,
+                    metaKey: false
+                }
+                
+                // If jwertyCodeFragment isn't an array then cast as a string
+                // and split it into one.
+                if (!realTypeOf(jwertyCodeFragment, 'array')) {
+                    jwertyCodeFragment = String(jwertyCodeFragment).toLowerCase()
+                        .match(/(?:(?:[^\+])+|\+\+|^\+$)/g);
+                }
+                
+                z = jwertyCodeFragment.length;
+                while (z--) {
+                    
+                    // Normalise matching errors
+                    if (jwertyCodeFragment[z] === '++') jwertyCodeFragment[z] = '+';
+                    
+                    // Inject either keyCode or ctrl/meta/shift/altKey into keyCombo
+                    if (jwertyCodeFragment[z] in _keys.mods) {
+                        keyCombo[_modProps[_keys.mods[jwertyCodeFragment[z]]]] = true;
+                    } else if(jwertyCodeFragment[z] in _keys.keys) {
+                        keyCombo.keyCode = _keys.keys[jwertyCodeFragment[z]];
+                    } else {
+                        rangeMatches = jwertyCodeFragment[z].match(/^\[([^-]+\-?[^-]*)-([^-]+\-?[^-]*)\]$/);
+                    }
+                }
+                if (realTypeOf(keyCombo.keyCode, 'undefined')) {
+                    // If we picked up a range match earlier...
+                    if (rangeMatches && (rangeMatches[1] in _keys.keys) && (rangeMatches[2] in _keys.keys)) {
+                        rangeMatches[2] = _keys.keys[rangeMatches[2]];
+                        rangeMatches[1] = _keys.keys[rangeMatches[1]];
+                        
+                        // Go from match 1 and capture all key-comobs up to match 2
+                        for (rangeI = rangeMatches[1]; rangeI < rangeMatches[2]; ++rangeI) {
+                            optionals.push({
+                                altKey: keyCombo.altKey,
+                                shiftKey: keyCombo.shiftKey,
+                                metaKey: keyCombo.metaKey,
+                                ctrlKey: keyCombo.ctrlKey,
+                                keyCode: rangeI,
+                                jwertyCombo: String(jwertyCodeFragment)
+                            });
+                            
+                        }
+                        keyCombo.keyCode = rangeI;
+                    // Inject either keyCode or ctrl/meta/shift/altKey into keyCombo
+                    } else {
+                        keyCombo.keyCode = 0;
+                    }
+                }
+                optionals.push(keyCombo);
+            
+            }
+            this[i] = optionals;
+        }
+        this.length = i;
+        return this;
+    }
+    
+    var jwerty = exports.jwerty = {        
+        /**
+         * jwerty.event
+         *
+         * `jwerty.event` will return a function, which expects the first
+         *  argument to be a key event. When the key event matches `jwertyCode`,
+         *  `callbackFunction` is fired. `jwerty.event` is used by `jwerty.key`
+         *  to bind the function it returns. `jwerty.event` is useful for
+         *  attaching to your own event listeners. It can be used as a decorator
+         *  method to encapsulate functionality that you only want to fire after
+         *  a specific key combo. If `callbackContext` is specified then it will
+         *  be supplied as `callbackFunction`'s context - in other words, the
+         *  keyword `this` will be set to `callbackContext` inside the
+         *  `callbackFunction` function.
+         *
+         *   @param {Mixed} jwertyCode can be an array, or string of key
+         *      combinations, which includes optinals and or sequences
+         *   @param {Function} callbackFucntion is a function (or boolean) which
+         *      is fired when jwertyCode is matched. Return false to
+         *      preventDefault()
+         *   @param {Object} callbackContext (Optional) The context to call
+         *      `callback` with (i.e this)
+         *      
+         */
+        event: function (jwertyCode, callbackFunction, callbackContext /*? this */) {
+            
+            // Construct a function out of callbackFunction, if it is a boolean.
+            if (realTypeOf(callbackFunction, 'boolean')) {
+                var bool = callbackFunction;
+                callbackFunction = function () { return bool; }
+            }
+            
+            jwertyCode = new JwertyCode(jwertyCode);
+            
+            // Initialise in-scope vars.
+            var i = 0
+            ,   c = jwertyCode.length - 1
+            ,   returnValue
+            ,   jwertyCodeIs;
+            
+            // This is the event listener function that gets returned...
+            return function (event) {
+                
+                // if jwertyCodeIs returns truthy (string)...
+                if ((jwertyCodeIs = jwerty.is(jwertyCode, event, i))) {
+                    // ... and this isn't the last key in the sequence,
+                    // incriment the key in sequence to check.
+                    if (i < c) {
+                        ++i;
+                        return;
+                    // ... and this is the last in the sequence (or the only
+                    // one in sequence), then fire the callback
+                    } else {
+                        returnValue = callbackFunction.call(
+                            callbackContext || this, event, jwertyCodeIs);
+                        
+                        // If the callback returned false, then we should run
+                        // preventDefault();
+                        if (returnValue === false) event.preventDefault();
+                        
+                        // Reset i for the next sequence to fire.
+                        i = 0;
+                        return;
+                    }
+                }
+                
+                // If the event didn't hit this time, we should reset i to 0,
+                // that is, unless this combo was the first in the sequence,
+                // in which case we should reset i to 1.
+                i = jwerty.is(jwertyCode, event) ? 1 : 0;
+            }
+        },
+        
+        /**
+         * jwerty.is
+         *
+         * `jwerty.is` will return a boolean value, based on if `event` matches
+         *  `jwertyCode`. `jwerty.is` is called by `jwerty.event` to check
+         *  whether or not to fire the callback. `event` can be a DOM event, or
+         *  a jQuery/Zepto/Ender manufactured event. The properties of
+         *  `jwertyCode` (speficially ctrlKey, altKey, metaKey, shiftKey and
+         *  keyCode) should match `jwertyCode`'s properties - if they do, then
+         *  `jwerty.is` will return `true`. If they don't, `jwerty.is` will
+         *  return `false`.
+         *
+         *   @param {Mixed} jwertyCode can be an array, or string of key
+         *      combinations, which includes optinals and or sequences
+         *   @param {KeyboardEvent} event is the KeyboardEvent to assert against
+         *   @param {Integer} i (Optional) checks the `i` key in jwertyCode
+         *      sequence
+         *      
+         */
+        is: function (jwertyCode, event, i /*? 0*/) {
+            jwertyCode = new JwertyCode(jwertyCode);
+            // Default `i` to 0
+            i = i || 0;
+            // We are only interesting in `i` of jwertyCode;
+            jwertyCode = jwertyCode[i];
+            // jQuery stores the *real* event in `originalEvent`, which we use
+            // because it does annoything stuff to `metaKey`
+            event = event.originalEvent || event;
+            
+            // We'll look at each optional in this jwertyCode sequence...
+            var key
+            ,   n = jwertyCode.length
+            ,   returnValue = false;
+            
+            // Loop through each fragment of jwertyCode
+            while (n--) {
+                returnValue = jwertyCode[n].jwertyCombo;
+                // For each property in the jwertyCode object, compare to `event`
+                for (var p in jwertyCode[n]) {
+                    // ...except for jwertyCode.jwertyCombo...
+                    if (p !== 'jwertyCombo' && event[p] !== jwertyCode[n][p]) returnValue = false;
+                }
+                // If this jwertyCode optional wasn't falsey, then we can return early.
+                if (returnValue !== false) return returnValue;
+            }
+            return returnValue;
+        },
+        
+        /**
+         * jwerty.key
+         *
+         *  `jwerty.key` will attach an event listener and fire
+         *   `callbackFunction` when `jwertyCode` matches. The event listener is
+         *   attached to `document`, meaning it will listen for any key events
+         *   on the page (a global shortcut listener). If `callbackContext` is
+         *   specified then it will be supplied as `callbackFunction`'s context
+         *   - in other words, the keyword `this` will be set to
+         *   `callbackContext` inside the `callbackFunction` function.
+         *
+         *   @param {Mixed} jwertyCode can be an array, or string of key
+         *      combinations, which includes optinals and or sequences
+         *   @param {Function} callbackFunction is a function (or boolean) which
+         *      is fired when jwertyCode is matched. Return false to
+         *      preventDefault()
+         *   @param {Object} callbackContext (Optional) The context to call
+         *      `callback` with (i.e this)
+         *   @param {Mixed} selector can be a string, jQuery/Zepto/Ender object,
+         *      or an HTML*Element on which to bind the eventListener
+         *   @param {Mixed} selectorContext can be a string, jQuery/Zepto/Ender
+         *      object, or an HTML*Element on which to scope the selector
+         *  
+         */
+        key: function (jwertyCode, callbackFunction, callbackContext /*? this */, selector /*? document */, selectorContext /*? body */) {
+            // Because callbackContext is optional, we should check if the
+            // `callbackContext` is a string or element, and if it is, then the
+            // function was called without a context, and `callbackContext` is
+            // actually `selector`
+            var realSelector = realTypeOf(callbackContext, 'element') || realTypeOf(callbackContext, 'string') ? callbackContext : selector
+            // If `callbackContext` is undefined, or if we skipped it (and
+            // therefore it is `realSelector`), set context to `global`.
+            ,   realcallbackContext = realSelector === callbackContext ? global : callbackContext
+            // Finally if we did skip `callbackContext`, then shift
+            // `selectorContext` to the left (take it from `selector`)
+            ,    realSelectorContext = realSelector === callbackContext ? selector : selectorContext;
+            
+            // If `realSelector` is already a jQuery/Zepto/Ender/DOM element,
+            // then just use it neat, otherwise find it in DOM using $$()
+            $b(realTypeOf(realSelector, 'element') ?
+               realSelector : $$(realSelector, realSelectorContext)
+            , jwerty.event(jwertyCode, callbackFunction, realcallbackContext));
+        },
+        
+        /**
+         * jwerty.fire
+         *
+         * `jwerty.fire` will construct a keyup event to fire, based on
+         *  `jwertyCode`. The event will be fired against `selector`.
+         *  `selectorContext` is used to search for `selector` within
+         *  `selectorContext`, similar to jQuery's
+         *  `$('selector', 'context')`.
+         *
+         *   @param {Mixed} jwertyCode can be an array, or string of key
+         *      combinations, which includes optinals and or sequences
+         *   @param {Mixed} selector can be a string, jQuery/Zepto/Ender object,
+         *      or an HTML*Element on which to bind the eventListener
+         *   @param {Mixed} selectorContext can be a string, jQuery/Zepto/Ender
+         *      object, or an HTML*Element on which to scope the selector
+         *  
+         */
+        fire: function (jwertyCode, selector /*? document */, selectorContext /*? body */, i) {
+            jwertyCode = new JwertyCode(jwertyCode);
+            var realI = realTypeOf(selectorContext, 'number') ? selectorContext : i;
+            
+            // If `realSelector` is already a jQuery/Zepto/Ender/DOM element,
+            // then just use it neat, otherwise find it in DOM using $$()
+            $f(realTypeOf(selector, 'element') ?
+                selector : $$(selector, selectorContext)
+            , jwertyCode[realI || 0][0]);
+        },
+        
+        KEYS: _keys
+    };
+    
+}(this, (typeof module !== 'undefined' && module.exports ? module.exports : this)));
 (function ($) {
     // Monkey patch jQuery 1.3.1+ css() method to support CSS 'transform'
     // property uniformly across Safari/Chrome/Webkit, Firefox 3.5+, IE 9+, and Opera 11+.
