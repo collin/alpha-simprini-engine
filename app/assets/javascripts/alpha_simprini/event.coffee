@@ -3,6 +3,14 @@
     instance_methods: 
       _eventNamespacer: /\.([\w-_]+)$/
       bind: (ev, callback, context) ->
+        if not (callback and context)
+          AS.error """
+          Attempted to bind an event #{ev} without a callback AND a context.
+          Both are required.
+          callback: #{callback}
+          context: #{context}
+          """
+        
         if match = ev.match @_eventNamespacer
           [ev, namespace] = ev.split(".")
         namespace ?= 'none'

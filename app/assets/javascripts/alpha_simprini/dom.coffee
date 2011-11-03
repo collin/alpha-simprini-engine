@@ -1,4 +1,4 @@
-class module("AS").HTML
+class module("AS").DOM
   @elements: _('a abbr address article aside audio b bdi bdo blockquote body button
     canvas caption cite code colgroup datalist dd del details dfn div dl dt em
     fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 head header hgroup
@@ -52,5 +52,5 @@ class module("AS").HTML
   
   dangling_content: (fn) -> @within_node(null, fn)
   
-AS.HTML.elements.each (element) ->
-  AS.HTML::[element] = -> @tag.apply this, _(arguments).unshift(element)
+AS.DOM.elements.each (element) ->
+  AS.DOM::[element] = -> @tag.apply this, _(arguments).unshift(element)

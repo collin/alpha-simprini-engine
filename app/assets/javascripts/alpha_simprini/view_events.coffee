@@ -80,10 +80,14 @@ class module("AS").ViewEvents
   apply_binding: (options) ->
     [selector, event_name, handler] = [options.selector, options.event_name, options.handler]
     if selector is ''
-      @view.el.bind event_name, handler
+      @view.el.bind event_name, handler, @view
     else if selector is '@'
-      @view.bind event_name, handler
+      @view.bind event_name, handler, @view
     else if selector[0] is '@'
-      @view[selector.slice(1)]?.bind event_name, handler
+      emitter = @view[selector.slice(1)]
+      if emitter instanceof AS.ViewModel
+        emitter.model?.bind event_name, handler, @view
+      else
+        emitter.bind event_name, handler, @view
     else
       $(selector, @view.el[0]).live event_name, handler

@@ -1,19 +1,5 @@
-# module "AS", ->
-#   class: (value) ->
-#     @el.removeClass(@prior)
-#     @el.addClass(value)
-#     @prior = value
-#     
-#   default: (value) ->
-#     @el.attr(value)
-#     
-#   class BindableElement
-# 
-#     constructor: (args) ->
-#       # body...
-# 
 module "AS", ->
-  class @View extends @HTML
+  class @View extends @DOM
     AS.Event.extends(this)
     
     tag_name: "div"
@@ -22,70 +8,30 @@ module "AS", ->
     
     constructor: (config={}) ->
       @cid = _.uniqueId("c")
-      for key, value in config
-        @[key] = new ViewModel(this, value)
+      for key, value of config
+        if value instanceof AS.Model
+          @[key] = AS.ViewModel.build(this, value)
+        else
+          @[key] = value
+      @binding_group = new AS.BindingGroup
       @_ensure_element()
       @delegateEvents()
       @initialize()
     
     initialize: ->
     
-    binding: (model, field, fn) ->
-      if fn
-        model.bind "change:#{field}.#{@cid}", fn
-        fn() # call in place so data rendered now
-      else
-        content = $ @text -> model[field]()
-        model.bind "change:#{field}.#{@cid}", -> content.text model[field]()
-        content 
-    
-    # bind_style: () ->
-    #   
-    # 
-    # bind_attribute: (emitter, event, ) ->
-    #   
-    
-    unbind_from_collection: (collection) ->
-      $(@current_node).empty()
-      collection.unbind(".#{@cid}")
-    
-    bind_to_selection_collection: (selection_model, collection, fn) ->
-      container = @current_node
-
-      selection_model.bind "change:selected", =>
-        selection = selection_model.selected()
-        previous_selection = selection_model.last('selected')
-
-        if previous_selection
-          @within_node container, ->
-            @unbind_from_collection previous_selection[collection]()
-
-        if selection
-          @within_node container, ->
-            @bind_to_collection selection[collection](), fn
-    
-    bind_to_collection: (collection, fn) ->
-      byCid = {}
-      content_fn = (item) =>
-        byCid[item.cid] = $ fn.call(this, item)
+    group_bindings: (fn) ->
+      @binding_group = @binding_group.add_child()
+      fn.call(this)
       
-      container = $ @current_node
-
-      collection.models.each content_fn
-
-      collection.bind "add.#{@cid}", (item) =>
-        content = @dangling_content -> content_fn(item)
-        index = collection.indexOf(item).value?()
-        index ?= 0
-        siblings = container.children()
-        if siblings.get(0) is undefined or siblings.get(index) is undefined
-          container.append(content)
-        else
-          $(siblings.get(index)).before(content)
-
-      collection.bind "remove.#{@cid}", (item) =>
-        byCid[item.cid].remove()
-        delete byCid[item.cid]
+    within_binding_group: (binding_group, fn) ->
+      current_group = @binding_group
+      @binding_group = binding_group
+      content = fn.call(this)
+      @binding_group = current_group
+      content
+    
+    binds: -> @binding_group.binds.apply(@binding_group, arguments)
     
     klass_string: (parts=[]) ->
       if @constructor is AS.View
