@@ -1,4 +1,4 @@
 module "AS", ->
-  @error = (msg) -> 
-    console.trace
-    console.error msg
+  @error = () -> 
+    console.trace()
+    console.error.apply(console, arguments)

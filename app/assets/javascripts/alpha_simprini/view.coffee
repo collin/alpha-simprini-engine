@@ -8,11 +8,13 @@ module "AS", ->
     
     constructor: (config={}) ->
       @cid = _.uniqueId("c")
+
       for key, value of config
         if value instanceof AS.Model
           @[key] = AS.ViewModel.build(this, value)
         else
           @[key] = value
+
       @binding_group = new AS.BindingGroup
       @_ensure_element()
       @delegateEvents()
@@ -20,14 +22,25 @@ module "AS", ->
     
     initialize: ->
     
+    append: (view) -> @el.append view.el
+    
+    process_attr: (node, key, value) ->
+      if value instanceof Function
+        # switch value
+        # when AS.Binding.Field
+        #   false
+        # else
+        #   false
+      else
+        node.setAttribute(key, value)
+    
     group_bindings: (fn) ->
-      @binding_group = @binding_group.add_child()
-      fn.call(this)
+      @within_binding_group @binding_group.add_child(), fn
       
     within_binding_group: (binding_group, fn) ->
       current_group = @binding_group
       @binding_group = binding_group
-      content = fn.call(this)
+      content = fn.call(this, binding_group)
       @binding_group = current_group
       content
     
@@ -35,27 +48,15 @@ module "AS", ->
     
     klass_string: (parts=[]) ->
       if @constructor is AS.View
-        parts.push "ASView"
+        # parts.push "ASView"
         parts.reverse().join " "
       else
         parts.push @constructor.name
         @constructor.__super__.klass_string.call @constructor.__super__, parts
 
-    element_string: ->
-      base = "#{@tagName}.#{@klass_string()}"
-    
-      if @model and @model.cid
-        base += "##{@model.cid}"
-    
-      if @model and @model.constructor.name
-        base += ".#{@model.constructor.name}"
-    
-      base
-    
     base_attributes: ->
       attrs =
         class: @klass_string()
-        id: @cid
       
     build_element: ->
       @current_node = @[@tag_name](@base_attributes())

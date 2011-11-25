@@ -1,3 +1,4 @@
+console.warn "DEBUG CODE IN PLACE"
 class module("AS").DOM
   @elements: _('a abbr address article aside audio b bdi bdo blockquote body button
     canvas caption cite code colgroup datalist dd del details dfn div dl dt em
@@ -19,27 +20,40 @@ class module("AS").DOM
   
   tag: (name, attrs, content) ->
     @current_node ?= document.createDocumentFragment()
-
     if _.isFunction(attrs)
       content = attrs
       attrs = undefined
     if _.isString(attrs)
       text_content = attrs
       attrs = undefined
-    
+  
     # TODO: use jQuery for better compatibility / less performance
     node = document.createElement(name)
-    node.setAttribute(key, value) for key, value of attrs unless attrs is undefined
+    for key, value of attrs || {}
+      if @process_attr
+        @process_attr(node, key, value)
+      else
+        node.setAttribute(key, value)
+  
     @current_node.appendChild node
-    
+  
     if text_content
       $(node).text text_content
     else if content
       @within_node node, ->
-        last = content.call(this)
-        if _.isString(last)
-          @text(last)
-
+        if window.location.href.match(/debug$/)
+          try
+            last = content.call(this)
+            if _.isString(last)
+              @text(last)
+          catch error
+            AS.error error, node
+            @raw "<span class='error'>ERROR #{error.type}</span>" 
+        else
+          last = content.call(this)
+          if _.isString(last)
+            @text(last)
+          
     node
   
   within_node: (node, fn) ->

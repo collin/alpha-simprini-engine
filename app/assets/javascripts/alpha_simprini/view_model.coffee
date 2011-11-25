@@ -1,6 +1,8 @@
 class AS.ViewModel
   AS.Delegate.extends(this)
   
+  # @intercept AS.DOM.elements, to: 'element'
+  
   @build: (view, model) ->
     constructor = AS.ViewModel.constructor_for_model(model.constructor)
     new constructor(view, model)
@@ -46,6 +48,16 @@ class AS.ViewModel
   constructor: (@view, @model) ->
     @cid = @model.cid
   
-  binding: (field, fn) ->
-    new @constructor.bindables[field](@view, @model, field, fn)
-    
+  binding: (field, options, fn) ->
+    if _.isFunction(options)
+      [fn, options] = [options, {}]
+      
+    new @constructor.bindables[field](@view, @model, field, options, fn)
+  
+  input: (field, options) ->
+    new AS.Binding.Input(@view, @model, field, options)
+  
+  element: (tagname, fn) ->
+    element = @context[tagname] class: @model.constructor.name, fn
+    $(element).data().model = @model
+    element

@@ -2,18 +2,52 @@ module "AS", ->
   @All =
     byId: {}
     byCid: {}
-  
+    
   class @Model
     AS.Event.extends(this)
-  
-    @has_many: (name, config) ->
-      @relation(name)
-      (@has_manys ?= {})[name] = config
-      @field(name)
+    AS.InheritableAttrs.extends(this)
+    AS.Callbacks.extends(this)
     
-    @has_one: (name, config) ->
+    @define_callbacks(after: ["initialize"], before: ["initialize"])
+    
+    @embeds_many: (name, config) ->
+      config.relation = true
       @relation(name)
-      (@has_ones ?= {})[name] = config
+      @attribute(name)
+      @write_inheritable_value("embeds_manys", name, config)
+
+    @has_many: (name, config={}) ->
+      config.relation = true
+      @relation(name)
+      @attribute(name)
+      @write_inheritable_value("has_manys", name, config)
+
+    @embeds_one: (name, config={}) ->
+      config.relation = true
+      @relation(name)
+      @write_inheritable_value("embeds_ones", name, config)
+      
+      @::[name] = (value) ->
+        if value is undefined
+          AS.All.byCid[@get_attribute(name)]
+        else
+          if value is null
+            @set_attribute(name, undefined)
+          else if value.cid
+            @set_attribute(name, value.cid)
+          else if _.isString(value)
+            @set_attribute(name, value)
+          else
+            if value._type
+              model = module(value._type)
+            else
+              model = AS.Model
+            @set_attribute name, (new model value).cid
+    
+    @has_one: (name, config={}) ->
+      config.relation = true
+      @relation(name)
+      @write_inheritable_value("has_ones", name, config)
       
       @::[name] = (value) ->
         if value is undefined
@@ -32,9 +66,10 @@ module "AS", ->
               model = AS.Model
             @set_attribute name, (new model value).cid
   
-    @belongs_to: (name, config) ->
+    @belongs_to: (name, config={}) ->
+      config.relation = true
       @relation(name)
-      (@belongs_tos ?= {})[name] = config
+      @write_inheritable_value("belongs_tos", name, config)
     
       @::[name] = (value) ->
         if value is undefined
@@ -50,50 +85,69 @@ module "AS", ->
             throw new Error(["Cannot set #{name} to unexpected value. Try passing a cid, or an object with a cid. Value was: ", value])
   
     @relation: (name) ->
-      (@relations ?= []).push name
+      @push_inheritable_item("relations", name)
   
-    @field: (name, options={}) ->
-      # Reflection
-      @fields ?= {}
-      @fields[name] = options
+    @field: (name, config={}) ->
+      @write_inheritable_value("fields", name, config)
+      @attribute(name)
     
-      # options.type ?= String
-      # options.type = Model.FieldTypes[option.type.name]
-      @::[name] = (value) ->
+    @attribute: (name) ->
+      @::[name] = (value, options) ->
         if value is undefined
           @get_attribute(name)
         else
-          @set_attribute(name, value)
+          @set_attribute(name, value, options)
     
     @initialize_relations: (model)  ->
+    
+    constructor: (@attributes = {}, options={}) ->        
+      @run_callbacks "before_initialize"
+      @initialize(options)
+      @run_callbacks "after_initialize"
   
-    constructor: (@attributes = {}) ->
-      @initialize()
-  
-    initialize: () ->
+    initialize: (options={}) ->
+      @attributes.id ?= AS.uniq()
+      
       @previous_attributes = @attributes
       @id = @attributes.id
       @cid = @id or _.uniqueId("c")
     
       AS.All.byCid[@cid] = AS.All.byId[@id] = this
-    
-      @initialize_has_many(name, config) for name, config of @constructor.has_manys
-      @initialize_has_one(name, config) for name, config of @constructor.has_ones
-      @initialize_belongs_to(name, config) for name, config of @constructor.belongs_tos
-    
+      
+      @initialize_embeds_many(name, config) for name, config of @constructor.embeds_manys || {}
+      @initialize_has_many(name, config) for name, config of @constructor.has_manys || {}
+      @initialize_embeds_one(name, config) for name, config of @constructor.embeds_ones || {}
+      @initialize_has_one(name, config) for name, config of @constructor.has_ones || {}
+      @initialize_belongs_to(name, config) for name, config of @constructor.belongs_tos || {}
+
     last: (attr) -> 
       [@attributes, @previous_attributes] = [@previous_attributes, @attributes]
       last = @[attr]()
       [@attributes, @previous_attributes] = [@previous_attributes, @attributes]
       last
-      
+
+    initialize_embeds_many: (name, config) ->
+      data = {}
+      klass = class this["#{name}_collection_klass"] extends AS.EmbeddedCollection
+      _.extend klass::, config
+      klass.model = -> config.model() if config.model
+      collection = data[name] = new klass(@[name]?())
+      collection.source = this
+      @set data
     
     initialize_has_many: (name, config) ->
+      @has_manys ||= {}
       data = {}
-      class this["#{name}_collection_klass"] extends AS.Collection
-      this["#{name}_collection_klass"].model = -> config.model() if config.model
-      data[name] = new this["#{name}_collection_klass"](@[name]?())
+      klass = class this["#{name}_collection_klass"] extends AS.Collection
+      _.extend klass::, config
+      klass.model = -> config.model() if config.model
+      @has_manys[name] = collection = data[name] = new klass()
+      collection.source = this
       @set data
+    
+    initialize_embeds_one: (name, config) ->
+      unless @[name](@attributes[name])
+        @[name]( new (config.model()) )
     
     initialize_has_one: (name, config) ->
       @[name](@attributes[name])
@@ -124,11 +178,11 @@ module "AS", ->
   
     set: (attrs) ->
       @[key](value) for key, value of attrs
-      @trigger("change")
-    
-    set_attribute: (name, value) ->
+      
+    set_attribute: (name, value, options={}) ->
       @attributes[name] = value
-      @trigger("change:#{name}")
+      @trigger("change:#{name}", name, value, options)
+      @trigger("change", name, value, options)
       value
     
     get_attribute: (name) ->
@@ -141,4 +195,295 @@ module "AS", ->
       args =  [].concat.apply [], arguments
       args.splice 1, 0, this
       AS.Event.instance_methods.trigger.apply this, args
+
+  # FIXME: indeces_did_load poorly named
+  @Model.Share = new AS.Mixin
+    mixed_in: ->
+      @before_initialize (model) -> 
+        model.share_bindings = []
+        model.share_namespace = ".#{model.attributes.id}-share"
       
+    class_methods:
+      index: (name, config) ->
+        @write_inheritable_value 'indeces', name, config
+        @::[name] = -> @["#{name}_indexr"] ?= @indexer(name)
+      
+      # Create an object locally. 
+      # Open it via sharejs.
+      #   callback: 
+      #     @did_create
+      #     @index
+      create: (id=AS.uniq(), indexer=->) ->
+        model = new this(id: id)
+        AS.open_shared_object id, (share) ->
+          model.did_create(share)
+          indexer model
+        model
+      
+      # Load a remote object (came from an index)
+      open: (id, callback) ->
+        model = new this(id:id)
+        callback ?= _.bind(model.did_open, model)
+        AS.open_shared_object id, callback
+        model
+      
+      load: (id, callback) ->
+        unless model = AS.All.byId[id]
+          model = new this(id:id)
+        callback ?= _.bind(model.did_load, model)
+        AS.open_shared_object id, callback
+        model
+      
+    instance_methods:
+      indexer: (index_name) ->
+        return (model) =>
+          @share.at(index_name, model.id).set model.constructor._type, (error) ->
+            console.warn "FIXME: handle error in Model#indexer}"
+            model.did_index()
+
+      ensure_initial_attributes: ->
+        return if @share.get()
+        @share.at().set id:@id, _type: @constructor._type
+      
+        for key, value of @constructor.indeces
+          @share.at(key).set new Object
+      
+        for key, value of @attributes_for_sharing()
+          continue unless value
+          @share.at(key).set(value) 
+
+      set_attributes_from_share: ->
+        for name, config of @constructor.fields || {}
+          @attributes[name] = @share.at(name).get()
+
+        for name, config of @constructor.has_manys || {}
+          collection = @[name]()
+          collection.add(id, remote:true) for id in @share.at(name).get() || []
+             
+        # for name, config of @constructor.embeds_manys || {}
+          # collection = @[name]()
+          # collection.add(id, remote:true) for id in @share.at(name).get() || []
+
+        for name, config of @constructor.belongs_tos || {}
+          @attributes[name] = @share.at(name).get()
+
+        for name, config of @constructor.has_ones || {}
+          console.warn "Model#attributes_for_sharing does not implement has_ones"
+
+        for name, config of @constructor.embeds_ones || {}
+          @attributes[name] = @share.at(name).get()
+
+      did_create: (@share) ->
+        @ensure_initial_attributes()
+        @bind_share_events()
+        @load_indeces()
+        
+      did_open: (@share) ->
+        @ensure_initial_attributes()
+        @indexed = true
+        @bind_share_events()
+        @load_indeces() if @constructor.indeces
+      
+      did_load: (@share) ->
+        @ensure_initial_attributes()
+        @indexed = true
+        @bind_share_events()
+        @set_attributes_from_share()
+        @load_indeces() if @constructor.indeces
+      
+      #FIXME: implement as ParallelHashQueue
+      load_indeces: ->
+        @loaded_data = {}
+        count = _(@constructor.indeces || {}).keys().length
+        loaded = 0
+        
+        @indeces_did_load() if count is loaded
+        
+        callback = =>
+          loaded++
+          @indeces_did_load() if count is loaded
+        
+        for name, config of @constructor.indeces
+          @load_index(name, callback)
+                  
+      #FIXME: implement as ParallelHashQueue
+      load_index: (name, callback) ->
+        count = _(@share.at(name).get() || {}).keys().length
+        loaded = 0
+        callback() if count is loaded
+        
+        _callback = (share) =>
+          console.log "load_index _callback, #{loaded}/#{count}"
+          @loaded_data[share.at("id").get()] = share
+          loaded++
+          callback() if count is loaded
+        
+        for id, _type of @share.at(name).get() || {}
+          module(_type).open(id, _callback)
+      
+      indeces_did_load: -> 
+        @build_indeces()
+        @set_attributes_from_share()
+        
+        for name, config of @constructor.indeces
+          for id, _type of @share.at(name).get()
+            AS.All.byId[id].indeces_did_load()
+        
+        @trigger("ready")
+      
+      build_indeces: ->
+        console.log this, "build_indeces", @loaded_data
+        for id, share of @loaded_data || {}
+          console.log this, id, share
+          AS.All.byId[id].did_open(share) 
+      
+      attributes_for_sharing: ->
+        all = {id:@id, _type: @constructor._type}
+        
+        for name, config of @constructor.fields || {}
+          all[name] = @attributes[name]
+        
+        for name, config of @constructor.has_manys || {}
+          all[name] = @attributes[name].map((model) -> model.id).value()
+          
+        for name, config of @constructor.embeds_manys || {}
+          all[name] = @attributes[name].map((model) -> model.attributes_for_sharing()).value()
+          
+        for name, config of @constructor.belongs_tos || {}
+          all[name] = @attributes[name]
+          
+        for name, config of @constructor.has_ones || {}
+          console.warn "Model#attributes_for_sharing does not implement has_ones"
+          
+        for name, config of @constructor.embeds_ones || {}
+          all[name] = @[name]().attributes_for_sharing()
+        
+        return all
+        
+      when_indexed: (fn) ->
+        if @indexed
+          fn.call(this)
+        else
+          @when_indexed_callbacks ?= []
+          @when_indexed_callbacks.push(fn)
+      
+      did_index: ->
+        @indexed = true
+        fn.call(this) for fn in @when_indexed_callbacks || []
+        
+      share_binding: (path, event, callback) ->
+        if path
+          @share_bindings.push @share.at(path).on event, callback
+        else
+          @share_bindings.push @share.at().on event, callback
+      
+      embedded_binding: (@share) -> @bind_share_events()
+      
+      revoke_share_bindings: ->
+        @share.removeListener(it) for it in @share_bindings
+        @share_bindings = []
+        @unbind_share_events()
+      
+      unbind_share_events: ->
+        @unbind(@share_namespace)
+        for name, config of @constructor.has_manys
+          @[name].unbind(@share_namespace)
+
+        for name, config of @constructor.embeds_manys
+          @[name]().each (model) => 
+            @model.unbind(@share_namespace)
+            @model.revoke_share_bindings()
+        
+        console.warn "unbind_share_events does not unbind has_one/embeds_one"
+
+      bind_share_events: ->
+        @bind_field_sharing()
+        @bind_has_many_sharing()
+        @bind_embeds_many_sharing()
+        @bind_belongs_to_sharing()
+        @bind_has_one_sharing()
+        @bind_embeds_one_sharing()
+        @bind_indeces()
+      
+      bind_field_sharing: ->
+        set_from_local = (model, field, value, options) =>
+          model.when_indexed => @share.at(field).set(value) unless options.remote
+        
+        for name, config of @constructor.fields || {}
+          @bind "change:#{name}#{@share_namespace}", set_from_local, this
+        
+        set_from_remote = (key, value) =>
+          @[key]( value, remote: true) if @constructor.fields[key]
+        
+        @share_binding null, "insert", (key, value) -> set_from_remote(key, value)          
+        @share_binding null, "replace", (key, previous, value) -> set_from_remote(key, value)
+
+      bind_has_many_sharing: ->
+        for name, config of @constructor.has_manys
+          do (name) =>
+            collection = @[name]()
+          
+            add_handler = (model, collection, options) =>
+              return if options.remote is true
+              model.when_indexed => 
+                @share.at(name).insert(options.at, {id:model.id, _type:model.constructor._type})
+            
+            collection.bind "add#{@share_namespace}", add_handler, this
+            
+            remove_handler = (model, collection, options) =>
+              return if options.remote is true
+              model.when_indexed => @share.at(name, options.at).remove()
+
+            collection.bind "remove#{@share_namespace}", remove_handler, this
+          
+            @share_binding name, "insert", (position, id) =>
+              collection.add id, at: position, remote: true
+            
+            @share_binding name, "delete", (position, id) =>
+              collection.remove id, remote: true
+                    
+      bind_embeds_many_sharing: ->
+        for name, config of @constructor.embeds_manys
+          do (name) =>
+            collection = @[name]()
+          
+            collection.each (model, index) =>
+              model.embedded_binding(@share.at(name, index))
+            
+            add_handler = (model, collection, options) =>
+                return if options.remote is true
+                @share.at(name).insert(options.at, model.attributes_for_sharing())
+                model.embedded_binding(@share.at(name, options.at))
+                
+            collection.bind "add#{@share_namespace}", add_handler, this  
+            
+            remove_handler = (model, collection, options) =>
+              return if options.remote is true
+              @share.at(name).at(options.at).remov()
+              model.revoke_share_bindings()
+              
+            collection.bind "remove#{@share_namespace}", remove_handler, this
+        
+      bind_belongs_to_sharing: ->
+        set_from_local = (model, field, value, options) =>
+          model.when_indexed => @share.at(field).set(value) unless options.remote
+          
+        for name, config of @constructor.belongs_tos || {}
+          @bind "change:#{name}#{@share_namespace}", set_from_local, this
+        
+        set_from_remote = (key, value) =>
+          @[key]( value, remote: true) if @constructor.belongs_tos[key]
+        
+        @share_binding null, "insert", (key, value) -> set_from_remote(key, value)          
+        @share_binding null, "replace", (key, previous, value) -> set_from_remote(key, value)
+        
+      bind_has_one_sharing: ->
+        console.warn "Model#bind_has_one_sharing not implemented"
+        
+      bind_embeds_one_sharing: ->
+        console.warn "Model#bind_embeds_one_sharing not implemented"
+      
+      bind_indeces: ->
+        for index, config of @constructor.indeces || {}
+          @share_binding index, "insert", (id, konstructor) => 
+            module(konstructor).load(id)

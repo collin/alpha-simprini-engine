@@ -15,17 +15,16 @@ class module("AS").ViewEvents
   unify_options: (events) ->
     for key, options of events
       if _.isString options
-        events[key] = method_name: options
+        options = events[key] = method_name: options
       
       [__, event_name, guard, selector] = key.match EVENT_SPLITTER
-      
-      options = events[key]
       
       options.event_name = event_name + @namespace
       options.guard = PARSE_GUARD(guard)
       options.selector = selector
       options.method = @view[options.method_name]
-    
+      
+
     return events
 
   validate_options: ->
@@ -43,6 +42,14 @@ class module("AS").ViewEvents
         Specified neither method or transition for event #{key}.
         Specify what to do when handling this error.
         Do you need to define the method: `#{options.method_name}'?
+        """
+      
+      if options.method and !_.isFunction(options.method)
+        console.error options.method, "was given instead of a function."
+        throw new Error """
+        Event Binding Error in #{@view.constructor.name}!
+        Specified method for event #{key} that is not a function.
+        Specify only a function as a method for an event handler.
         """
         
   cache_handlers: ->
@@ -62,7 +69,6 @@ class module("AS").ViewEvents
   
   revoke_binding: (options) ->
     [selector, event_name] = [options.selector, options.event_name]
-    console.log "revoke_binding", selector, event_name
     if selector is ''
       @view.el.unbind @namespace
     else if selector is '@'
@@ -85,6 +91,8 @@ class module("AS").ViewEvents
       @view.bind event_name, handler, @view
     else if selector[0] is '@'
       emitter = @view[selector.slice(1)]
+      if emitter is undefined
+        AS.error "Attempted to bind to #{selector}, no such member on #{this}"
       if emitter instanceof AS.ViewModel
         emitter.model?.bind event_name, handler, @view
       else

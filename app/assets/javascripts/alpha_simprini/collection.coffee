@@ -20,11 +20,13 @@ class module("AS").Collection
     @add(model) for model in given_models
   
   add: (model={}, options={}) ->
-    throw new Error("Cannot add model to collection twice.") if @models.include(model).value()
     
     unless model instanceof AS.Model
       model = @build(model)
     
+    model[@inverse](@source) if @inverse and @source
+    
+    throw new Error("Cannot add model to collection twice.") if @models.include(model).value()
     @_add(model, options)
     
     model
@@ -38,25 +40,45 @@ class module("AS").Collection
     model.bind("all", @_on_model_event, this)
     model.trigger "add", this, options
   
-  remove: (model, options) -> @_remove(model, options)
+  # filter: (options) ->
+  #   @filter ?= new AS.Collection.Filter(this)
+  #   @filter.reset()
+  #   @filter.on(options)
+  #   @filter
+  
+  remove: (model, options={}) -> 
+    result = @_remove(model, options)
     
-  _remove: (model, options) ->
+    model[@inverse](null) if @inverse
+    
+    result
+    
+  _remove: (model, options={}) ->
+    options.at = @models.indexOf(model).value()
     @length--
     delete @byId[model.id]
     delete @byCid[model.cid]
-    @models = @models.chain().without(model)
+    @models = @models.without(model)
     model.trigger("remove", this, options)
     model.unbind("all", @_on_model_event)
   
   build: (model) ->
-    if model._type
-      ctor = module(model._type)
+    if _.isString(model)
+      AS.All.byId[model]
     else
-      ctor = @constructor.model()
-    new ctor(model)
+      if model.id and AS.All.byId[model.id] 
+        return AS.All.byId[model.id] 
+      else if model._type
+        ctor = module(model._type)
+      else
+        ctor = @constructor.model()
+      new ctor(model)
   
   # When an event is triggered from a model, it is bubbled up through the collection.
   _on_model_event: (event, model, collection, options) ->
     return if (event is "add" or event is "remove") and (this isnt collection)
     @_remove(model, options) if event is "destroy"
     @trigger.apply(this, arguments)
+
+
+class module("AS").EmbeddedCollection extends AS.Collection
