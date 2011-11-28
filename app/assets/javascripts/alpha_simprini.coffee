@@ -11,7 +11,6 @@
 #= require ./alpha_simprini/views/panel
 #= require_tree ./alpha_simprini/views
 #= require_tree ./alpha_simprini
-#= require_tree ./lib/ot
 #= require_tree ./lib/css
 
 # ## Some little utility functions. 
