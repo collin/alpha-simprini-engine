@@ -17,7 +17,8 @@
         ["jquery.event.drag", "2.0"],
         ["jquery.event.drop", "2.0"],
         ["jwerty", "0.3.0"],
-        ["jquery.css.transform", "2011.05.04"]
+        ["jquery.css.transform", "2011.05.04"],
+        ["rangy-core", "1.2"]
       ],
       
       "qunit": ["qunit"]

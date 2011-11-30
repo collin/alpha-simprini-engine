@@ -1,8 +1,6 @@
 class AS.ViewModel
   AS.Delegate.extends(this)
   
-  # @intercept AS.DOM.elements, to: 'element'
-  
   @build: (view, model) ->
     constructor = AS.ViewModel.constructor_for_model(model.constructor)
     new constructor(view, model)
@@ -57,7 +55,14 @@ class AS.ViewModel
   input: (field, options) ->
     new AS.Binding.Input(@view, @model, field, options)
   
+  editline: (field, options) ->
+    new AS.Binding.EditLine(@view, @model, field, options)
+  
   element: (tagname, fn) ->
     element = @context[tagname] class: @model.constructor.name, fn
     $(element).data().model = @model
     element
+  
+  component: (constructor) ->
+    AS.ViewModel.build(@view, @model.component(constructor).value())
+  

@@ -8,7 +8,7 @@ module "AS", ->
     AS.InheritableAttrs.extends(this)
     AS.Callbacks.extends(this)
     
-    @define_callbacks(after: ["initialize"], before: ["initialize"])
+    @define_callbacks(after: ["initialize"], before: ["initialize", "open"])
     
     @embeds_many: (name, config) ->
       config.relation = true
@@ -215,6 +215,7 @@ module "AS", ->
 
       open: (id=AS.uniq(), indexer=(model) -> model.did_index()) ->
         model = new this(id:id)
+        model.run_callbacks("before_open")
         AS.open_shared_object id, (share) ->
           model.did_open(share)
           indexer(model)
@@ -231,7 +232,7 @@ module "AS", ->
         model = new this(id:id)
         model.did_load_embedded(share)
         model
-
+      
     instance_methods:
       did_open: (@share) ->
         @ensure_defaults()
@@ -414,7 +415,10 @@ module "AS", ->
           model.when_indexed => @share.at(field).set(value) unless options.remote
         
         for name, config of @constructor.fields || {}
-          @bind "change:#{name}#{@share_namespace}", set_from_local, this
+          do (name) =>
+            @bind "change:#{name}#{@share_namespace}", set_from_local, this
+            @share_binding name, "insert", ((position, text) => @trigger("share:insert:#{name}", position, text)), this
+            @share_binding name, "delete", ((position, text) => @trigger("share:delete:#{name}", position, text)), this
         
         set_from_remote = (key, value) =>
           @[key]( value, remote: true) if @constructor.fields?[key]
@@ -440,12 +444,12 @@ module "AS", ->
     
             collection.bind "remove#{@share_namespace}", remove_handler, this
           
-            @share_binding name, "insert", (position, id) =>
-              console.log "has_many insert", id
-              collection.add id, at: position, remote: true
+            @share_binding name, "insert", (position, data) =>
+              console.log "has_many insert", data
+              collection.add data, at: position, remote: true
             
-            @share_binding name, "delete", (position, id) =>
-              collection.remove id, remote: true
+            @share_binding name, "delete", (position, data) =>
+              collection.remove AS.All.byId[data.id], remote: true
                     
       bind_embeds_many_sharing: ->
         # for name, config of @constructor.embeds_manys
@@ -471,7 +475,9 @@ module "AS", ->
         
       bind_belongs_to_sharing: ->
         set_from_local = (model, field, value, options) =>
-          model.when_indexed => @share.at(field).set(value) unless options.remote
+          value = null if value is undefined
+          model.when_indexed => 
+            @share.at(field).set(value) unless options.remote
           
         for name, config of @constructor.belongs_tos || {}
           @bind "change:#{name}#{@share_namespace}", set_from_local, this

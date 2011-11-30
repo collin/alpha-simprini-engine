@@ -29,8 +29,9 @@ class AS.Binding.Model
           options.fn(@model)
         
         painter = -> @content.css property, @styles[property]()
-        
-        @context.binds @model, "change:#{options.field}", painter, this
+
+        for field in options.field.split(" ")
+          @context.binds @model, "change:#{field}", painter, this
   
   attr: (attrs) ->
      for property, options of attrs
@@ -43,7 +44,8 @@ class AS.Binding.Model
         
           painter = -> @content.attr property, @attrs[property]()
           
-          @context.binds @model, "change:#{options.field}", painter, this
+          for field in options.field.split(" ")
+            @context.binds @model, "change:#{field}", painter, this
   
   width: (fn) ->
     @width_fn = =>
@@ -85,12 +87,94 @@ class AS.Binding.Input extends AS.Binding.Field
     @context.binds input, "change", @set_field, this
     input
     
-  set_content: ->
-    @content.val @model[@field]()
+  set_content: () ->
+    @content.val @field_value()
   
-  set_field: =>
+  set_field: () =>
     @model[@field] @content.val()
 
+class AS.Binding.EditLine extends AS.Binding
+  applyChange = (doc, oldval, newval) ->
+    return if oldval == newval
+    commonStart = 0
+    commonStart++ while oldval.charAt(commonStart) == newval.charAt(commonStart)
+
+    commonEnd = 0
+    commonEnd++ while oldval.charAt(oldval.length - 1 - commonEnd) == newval.charAt(newval.length - 1 - commonEnd) and
+      commonEnd + commonStart < oldval.length and commonEnd + commonStart < newval.length
+
+    doc.del commonStart, oldval.length - commonStart - commonEnd unless oldval.length == commonStart + commonEnd
+    doc.insert commonStart, newval[commonStart ... newval.length - commonEnd] unless newval.length == commonStart + commonEnd
+  
+  transform_insert_cursor = (text, position, cursor) ->
+    if position < cursor
+      cursor + text.length
+    else
+      cursor
+    
+  transform_delete_cursor = (text, position, cursor) ->
+    if position < cursor
+      cursor - Math.min(text.length, cursor - position)
+    else
+      cursor
+
+  initialize: ->
+    @options.contentEditable = true
+    @content = @make_content()
+    @elem = @content[0]
+    @elem.innerHTML = @field_value()
+    @previous_value = @field_value()
+    @selection = start: 0, end: 0
+    
+    @context.binds @model, "share:insert:#{@field}", @insert, this
+    @context.binds @model, "share:delete:#{@field}", @delete, this
+    
+    for event in ['textInput', 'keydown', 'keyup', 'select', 'cut', 'paste', 'click', 'focus']
+      @context.binds @content, event, @generate_operation, this
+    
+  make_content: ->
+    $ @context.span(@options)
+  
+  replace_text: (new_text="") ->
+    range = rangy.createRange()
+    selection = rangy.getSelection()
+    
+    scrollTop = @elem.scrollTop
+    @elem.innerHTML = new_text
+    @elem.scrollTop = scrollTop unless @elem.scrollTop is scrollTop
+    
+    return unless selection.anchorNode?.parentNode is @elem
+    range.setStart(selection.anchorNode || @elem.childNodes[0] || @elem, @selection.start)
+    range.collapse(true)
+    selection.setSingleRange(range)
+    
+  insert: (model, position, text) ->
+    @selection.start = transform_insert_cursor(text, position, @selection.start)
+    @selection.end = transform_insert_cursor(text, position, @selection.end)
+    
+    @replace_text @elem.innerHTML[...position] + text + @elem.innerHTML[position..]
+    
+  delete: (model, position, text) ->
+    @selection.start = transform_delete_cursor(text, position, @selection.start)
+    @selection.end = transform_delete_cursor(text, position, @selection.end)
+    
+    @replace_text @elem.innerHTML[...position] + @elem.innerHTML[position + text.length..]
+    
+  generate_operation: () =>
+    selection = rangy.getSelection()
+    if selection.rangeCount
+      range = rangy.getSelection().getRangeAt(0)
+    else
+      range = rangy.createRange()
+    @selection.start = range.startOffset
+    @selection.end = range.endOffset
+    _.defer =>
+      if @elem.innerHTML isnt @previous_value
+        @previous_value = @elem.innerHTML
+        # IE constantly replaces unix newlines with \r\n. ShareJS docs
+        # should only have unix newlines.
+        applyChange @model.share.at(@field), @model.share.at(@field).getText(), @elem.innerHTML.replace(/\r\n/g, '\n')
+    
 class AS.Binding.HasMany extends AS.Binding
   @will_group_bindings = true
   
