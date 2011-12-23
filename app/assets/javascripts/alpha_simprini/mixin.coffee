@@ -2,7 +2,7 @@
 module "AS", ->
   class @Mixin
     extended: (klass) ->
-      _(klass.extended_by).include(this)
+      _(klass.extended_by || klass.constructor.extended_by).include(this)
       
     extends: (klass) ->
       # Bails out if already extended (no double extensions here)

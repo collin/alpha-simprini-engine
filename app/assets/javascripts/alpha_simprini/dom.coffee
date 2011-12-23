@@ -13,7 +13,8 @@ class module("AS").DOM
     # body...
 
   text: (text_content) ->
-    @span text_content
+    console.warn "FIXME: escape text content!"
+    @current_node.appendChild document.createTextNode(text_content)
   
   raw: (html) ->
     $(@span()).html(html)

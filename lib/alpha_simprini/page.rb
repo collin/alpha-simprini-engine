@@ -10,9 +10,15 @@ module AlphaSimprini
           assets
         end
         body do
+          notices
           body_content
         end
       end
+    end
+  
+    def notices
+      p class: "notice" do text flash.notice end
+      p class: "alert" do text flash.alert end
     end
   
     def assets

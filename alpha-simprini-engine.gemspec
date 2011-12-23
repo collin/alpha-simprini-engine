@@ -16,11 +16,11 @@ Gem::Specification.new do |s|
   s.files = Dir["{app,config,db,lib,extras}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "rails", "~> 3.1.0"
+  s.add_dependency "rails", "~> 3.2.0.rc1"
   s.add_dependency "erector", "~> 0.9.0.pre1"
   s.add_dependency "inherited_resources", "~> 1.2.2"
-  s.add_dependency 'sass-rails', "  ~> 3.1.0"
-  s.add_dependency 'coffee-rails', "~> 3.1.0"
+  s.add_dependency 'sass-rails', "  ~> 3.2.1"
+  s.add_dependency 'coffee-rails', "~> 3.2.0"
   s.add_dependency 'msgpack'
   s.add_dependency 'compass', "~> 0.12.alpha"
 

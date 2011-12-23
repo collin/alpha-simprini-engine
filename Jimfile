@@ -14,9 +14,8 @@
         ["raphael", "1.5.2"],
         ["raphael.blur", "0.1"],
         ["raphael.primitives", "0.2"],
-        ["jquery.event.drag", "2.0"],
-        ["jquery.event.drop", "2.0"],
         ["jwerty", "0.3.0"],
+        ["jquery.url", "2.0"],
         ["jquery.css.transform", "2011.05.04"],
         ["rangy-core", "1.2"]
       ],

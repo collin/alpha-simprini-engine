@@ -1,17 +1,23 @@
-#= require bundle
-#= require ./lib/string
-#= require ./lib/module
-#= require ./alpha_simprini/mixin
-#= require ./alpha_simprini/state_machine
-#= require ./alpha_simprini/delegate
-#= require ./alpha_simprini/instance_methods
-#= require ./alpha_simprini/event
-#= require ./alpha_simprini/dom
-#= require ./alpha_simprini/view
+# this is where I used to require "bundle"
+module = require("lib/module").module
+
+exports.AS = module("AS")
+
+require "require_tree"
+require "lib/module"
+require "lib/string"
+require "alpha_simprini/mixin"
+
+for library in "mixin delegate instance_methods event dom view".split(" ")
+  require "alpha_simprini/#{library}"
+
+require "alpha_simprini/views/panel"
+
+
+
 #= require ./alpha_simprini/views/panel
 #= require_tree ./alpha_simprini/views
 #= require_tree ./alpha_simprini
-#= require_tree ./lib/css
 
 # ## Some little utility functions. 
 
@@ -42,3 +48,12 @@ module("AS").open_shared_object = (id, callback) ->
   console.log "opening shared object #{id}"
   sharejs.open id, "json", @sharejs_url, (error, handle) ->
     if error then console.error(error) else callback(handle)
+
+module("AS").human_size = (size) ->
+  units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  i = 0;
+  while size >= 1024
+    size /= 1024
+    ++i
+
+  size.toFixed(1) + ' ' + units[i]

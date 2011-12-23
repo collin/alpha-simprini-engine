@@ -77,6 +77,9 @@ class AS.Binding.Field extends AS.Binding
   set_content: =>
     @content.text @field_value()
 
+  field_value: ->
+    @fn?() or super
+
   make_content: ->
     $ @context.span()
     
@@ -193,8 +196,10 @@ class AS.Binding.HasMany extends AS.Binding
     return false unless @options.filter
     
     for key, value of @options.filter
-      value = _([value]).flatten()
-      return true unless _(value).include(item[key]())
+      expected_value = _([value]).flatten()
+      value_on_item = item[key]?()
+
+      return true unless _(expected_value).include(value_on_item)
     
     false
     

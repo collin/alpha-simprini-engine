@@ -10,8 +10,10 @@ class AS.ViewModel
     
     klass = class AS.ViewModel[model.name] extends AS.ViewModel
     klass.name = model.name
+    klass::type = model.name
     
     klass.bindables = {}
+    klass.extended_by = model.extended_by
     
     klass.field(field) for field, __ of model.fields if model.fields
     klass.has_many(has_many) for has_many, __ of model.has_manys if model.has_manys
