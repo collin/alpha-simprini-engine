@@ -1,1 +1,2 @@
-[Go to alpha_simprini instead](https://github.com/collin/alpha_simprini)
+project abandoned
+# Go to alpha_simprini instead: https://github.com/collin/alpha_simprini
