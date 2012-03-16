@@ -1,3 +1,1 @@
-= AlphaSimpriniEngine
-
-This project rocks and uses MIT-LICENSE.
+[Go to alpha_simprini instead](https://github.com/collin/alpha_simprini)
