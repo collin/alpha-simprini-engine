@@ -14,15 +14,15 @@ module AlphaSimpriniEngine
       app.config.autoload_paths += %W(#{app.root}/extras #{AlphaSimpriniEngine::Engine.root}/extras)
     end
     
-    initializer "alpha-simprini-engine.sprockets.engine_processor" do |app|
-      require "alpha_simprini/directive_processor"
-      
-      app.assets.unregister_processor("text/javascript", Sprockets::DirectiveProcessor)
-      app.assets.register_processor("text/javascript", AlphaSimprini::DirectiveProcessor)
-
-      app.assets.unregister_processor("application/javascript", Sprockets::DirectiveProcessor)
-      app.assets.register_processor("application/javascript", AlphaSimprini::DirectiveProcessor)
-    end
+    # initializer "alpha-simprini-engine.sprockets.engine_processor" do |app|
+    #   require "alpha_simprini/directive_processor"
+    #   
+    #   app.assets.unregister_processor("text/javascript", Sprockets::DirectiveProcessor)
+    #   app.assets.register_processor("text/javascript", AlphaSimprini::DirectiveProcessor)
+    # 
+    #   app.assets.unregister_processor("application/javascript", Sprockets::DirectiveProcessor)
+    #   app.assets.register_processor("application/javascript", AlphaSimprini::DirectiveProcessor)
+    # end
     
     # Set things up for erector
     initializer "alpha-simprini-engine.controller" do |app|
