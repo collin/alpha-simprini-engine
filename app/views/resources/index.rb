@@ -15,9 +15,9 @@ class Views::Resources::Index < Views::Resources::Base
   def item_list
     blank_slate
     if collection.any?
-      ul do
+      ul class: collection.name.pluralize.dasherize.downcase do
         collection.each do |item|
-          li do
+          li class: collection.name.dasherize.downcase do
             links_for_item(item)
           end
         end
