@@ -1,2 +1,1 @@
-project abandoned
-= Go to alpha_simprini instead: https://github.com/collin/alpha_simprini
+= Just a little engine that sets up some things I like to use in rails.
