@@ -10,8 +10,21 @@ module AlphaSimprini
           assets
         end
         body do
-          notices
-          body_content
+          section id:'notices' do
+            notices            
+          end
+
+          header do
+            header_content            
+          end
+          
+          section id:'content' do
+            body_content
+          end
+
+          footer do
+            footer_content            
+          end
         end
       end
     end
@@ -36,8 +49,16 @@ module AlphaSimprini
       end
     end
   
+    def header_content
+      
+    end
+
     def body_content
       copy :blank
+    end
+
+    def footer_content
+      
     end
   end
 end

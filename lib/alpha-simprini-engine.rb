@@ -1,6 +1,18 @@
 module AlphaSimpriniEngine
   require "inherited_resources"
   require "alpha_simprini/page"
+
+  if Rails.env.production?
+    require_relative "./../app/views"
+    require_relative "./../app/views/resources"
+    require_relative "./../app/views/resources/base"
+    require_relative "./../app/views/resources/form"
+    require_relative "./../app/views/resources/edit"
+    require_relative "./../app/views/resources/index"
+    require_relative "./../app/views/resources/new"
+    require_relative "./../app/views/resources/show"
+    require_relative "./../app/views/resources/show_has_many"
+  end
   
   class Engine < Rails::Engine
     config.autoload_paths += %w(#{config.root}/app)
