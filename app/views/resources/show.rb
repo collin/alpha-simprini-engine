@@ -1,12 +1,18 @@
 class Views::Resources::Show < Views::Resources::Base
-  cattr_accessor :has_manys
-  
-  def self.has_manys
-    @has_manys ||= {}
+  def self.field(name, &renderer)
+    fields[name] = [Class.new(Views::Resources::ShowField), renderer]
   end
   
   def self.has_many(name, &config)
-    has_manys[name] = Views::Resources::ShowHasMany.new(&config)
+    has_manys[name] = Class.new(Views::Resources::ShowHasMany, &config)
+  end
+
+  def self.has_manys
+    @has_manys ||= {}
+  end  
+
+  def self.fields
+    @fields ||= {}
   end
 
   def back_link
@@ -21,7 +27,9 @@ class Views::Resources::Show < Views::Resources::Base
   end
 
   def resource_content
-    p resource.name      
+    self.class.fields.each do |name, (field, renderer)|
+      widget field.new(name: name, renderer:renderer, resource:resource)
+    end
   end  
 
   def edit_link
@@ -30,25 +38,7 @@ class Views::Resources::Show < Views::Resources::Base
 
   def associations_content
     self.class.has_manys.each do |name, has_many|
-      div do
-        h2 name
-        table do
-          thead do
-            has_many.columns.each do |column|
-              th { text column.name }
-            end
-          end
-          tbody do
-            resource.send(name).each do |item|              
-              tr class: cycle(:odd, :even) do
-                has_many.columns.each do |column|
-                  td { column.content_for(self, item) }
-                end                
-              end
-            end
-          end
-        end
-      end
+      widget has_many.new(collection: resource.send(name))
     end
   end
 end

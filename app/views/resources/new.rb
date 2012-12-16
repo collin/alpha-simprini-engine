@@ -1,9 +1,5 @@
 class Views::Resources::New < Views::Resources::Form
-  def page_title
-    "New #{resource_name}"
-  end
-  
-  def form &block
-    form_for resource, url: collection_url, &block
+  def body_content
+    form_for resource, url: collection_path, &form_block
   end
 end

@@ -1,9 +1,23 @@
 require "erector"
 module AlphaSimprini
   class Page < Erector::Widget
+    class_attribute :scripts
+    class_attribute :stylesheets
+
+    self.scripts     = []
+    self.stylesheets = []
+
+    def self.script script
+      self.scripts << script
+    end
+
+    def self.stylesheet stylesheet
+      self.stylesheets << stylesheet
+    end
+
     def content
       text :doctype_html
-      html do
+      html(html_attrs) do
         head do
           csrf_meta_tag
           title :application_title
@@ -29,12 +43,18 @@ module AlphaSimprini
       end
     end
   
+    def html_attrs
+      {}
+    end
+
     def notices
-      p class: "notice" do text flash.notice end
-      p class: "alert" do text flash.alert end
+      flash.notice and p class: "notice" do text flash.notice end
+      flash.alert and p class: "alert" do text flash.alert end
     end
   
     def assets
+      stylesheet_link_tag *stylesheets
+      javascript_include_tag *scripts
     end
   
     def copy key
@@ -42,7 +62,7 @@ module AlphaSimprini
     end
   
     def text(value)
-      if value.is_a? Symbol
+      if value.is_a?(Symbol)
         output << h(t(value))
       else
         super

@@ -1,26 +1,20 @@
 class Views::Resources::Form < Views::Resources::Base
-  def body_content
-    form do |form|
-      fields(form)
-      buttons(form)
-    end
-  end
-  
-  def fields(form)
-    available_fields.each do |key, value|
-      input(form, key, :text_field)
-    end
+  def self.form(&block)
+    @form_block = block
   end
 
-  def buttons(form)
-    div class: 'buttons' do
-      form.submit
-    end    
+  def self.form_block
+    @form_block
   end
 
-  def available_fields
-    resource.fields.reject do |key, value|
-      key.starts_with?("_")
-    end
+  def form_block
+    self.class.form_block
+  end
+
+  def form_for(resource, options={}, &block)
+    options[:builder] ||= FormBuilder.wrapping(NestedForm::SimpleBuilder)
+    text(helpers.form_for(resource, options) do |f|
+      instance_exec(f, &block) if block_given?  
+    end << helpers.send(:after_nested_form_callbacks) )
   end
 end
