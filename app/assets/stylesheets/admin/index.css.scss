@@ -1,0 +1,89 @@
+@import 'compass/css3';
+@import 'bootstrap';
+
+a.new {
+  @extend .btn;
+}
+
+table.records {
+  @extend .table;
+  @extend .striped-table;
+  a {
+    @extend .btn;
+  }
+}
+
+form {
+  @extend .form;
+
+  .input {
+    > * {
+      @include inline-block;
+    }
+  }
+
+  fieldset.variant {
+    width: 300px;
+  }
+}
+
+header {
+  @include box-shadow(rgba(0,0,0,0.5) 0 0 3px inset);
+  @include background(
+    linear-gradient(white, rgb(224, 224, 224))
+  );
+  overflow: hidden;
+
+  margin-bottom: 10px;
+
+  > * {
+    font-size: 16px;
+    line-height: 24px;
+    display: inline-block;
+    position: relative;
+    top: 10px;
+    @include text-shadow(#fff 0px 1px 0);
+  }
+
+  label {
+    margin-left: 10px;
+    font-weight: bold;
+  } 
+
+  nav {
+    margin-bottom: 10px;
+    padding-left: 20px;
+
+    a {
+      color: #454545;
+      padding: 5px 10px;
+
+      &.current {
+        background: white;
+        @include box-shadow(rgba(0,0,0,0.5) 0 0 3px);
+        @include border-radius(3px);
+      }
+
+      &:hover {
+        color: #454545;
+      }
+    }
+  }
+}
+
+.alert {
+  @extend .alert-block;
+  @extend .alert-error;
+}
+
+.notice {
+  @extend .alert-block;
+  @extend .alert-success;
+}
+
+.tree li {
+  margin-left: 10px;
+  label > * {
+    @include inline-block;
+  }
+}
