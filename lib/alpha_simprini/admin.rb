@@ -47,9 +47,13 @@ class AlphaSimprini::Admin < Rails::Engine
   end
 
   def self.generate_controller(superclass=base_controller, &config)
+    _url_helpers = routes.url_helpers
+
     controller = Class.new(superclass) do
       append_view_path AlphaSimprini::AdminViewResolver.new
       class_attribute :engine
+      include _url_helpers
+      helper _url_helpers
       instance_eval(&config) if block_given?
     end
     controller.engine = self
@@ -58,12 +62,10 @@ class AlphaSimprini::Admin < Rails::Engine
 
   def self.generate_view(superclass=AlphaSimprini::Page)
     _view_module = view_module
-    _url_helpers = routes.url_helpers
 
     view = Class.new(superclass) do
       include AlphaSimprini::Admin::Page
       include _view_module
-      include _url_helpers
     end
 
     view.engine = self

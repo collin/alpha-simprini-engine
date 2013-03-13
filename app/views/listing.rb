@@ -60,7 +60,11 @@ module Views::Listing
   def listing
     blank_slate
     if collection.any?
-      # paginate collection if collection.respond_to?(:current_page)
+      nav class:'pagination' do
+        ol do
+          paginate(collection, theme:'twitter-bootstrap') if collection.respond_to?(:current_page)                  
+        end
+      end
       table class: collection_class do
         table_header
         collection.each do |item|

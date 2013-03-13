@@ -32,6 +32,13 @@ form {
   }
 }
 
+.pagination {
+  a {
+    line-height: 20px;
+    padding: 0 10px;
+  }
+}
+
 .scopes {
   @extend .btn-group;
   list-style: none;

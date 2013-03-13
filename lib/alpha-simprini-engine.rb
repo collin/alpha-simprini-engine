@@ -48,6 +48,10 @@ module AlphaSimpriniEngine
         Rails.logger.info "loading #{file}!"
         Kernel.load file
       end
+
+      AlphaSimprini::Admin.subclasses.each do |subclass|
+        subclass.routes.finalize!
+      end
     end
 
     config.watchable_files << __FILE__
