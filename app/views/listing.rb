@@ -105,12 +105,12 @@ module Views::Listing
     thead do
       tr do
         content_fields.each do |(field, block)|
-          td do
+          th do
             text field.to_s.titlecase
           end
         end
 
-        td { "Actions" }
+        th { "Actions" }
       end
     end
   end

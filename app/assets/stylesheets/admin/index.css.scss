@@ -7,9 +7,11 @@ a.new {
 
 table.records {
   @extend .table;
+  @extend .table-condensed;
   @extend .striped-table;
   a {
-    @extend .btn;
+    @include inline-block;
+    margin-right: 5px;
   }
   td {
     vertical-align: middle;

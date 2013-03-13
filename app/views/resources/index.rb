@@ -29,9 +29,10 @@ class Views::Resources::Index < Views::Resources::Base
     listing
   end
 
-  delegate :scopes, :sortings, to: 'component'
+  delegate :scopes, :sortings, :search_fields, to: 'component'
 
   def search
+    return if search_fields.none?
     form class:'navbar-search', action:request.fullpath do
       input type:'search', class:'search-query', name:'search', value:params[:search]
       params[:scope] and input type:'hidden', name:'scope', value:params[:scope]
