@@ -64,11 +64,20 @@ class AlphaSimprini::Admin::Component
       
         def collection
           get_collection_ivar || begin
-            c = end_of_association_chain
-            paged = apply_pagination(c)
+            chain = end_of_association_chain
+            searched = apply_search(chain)
+            paged = apply_pagination(searched)
             sorted = apply_sorting(paged)
             scoped = apply_scoping(sorted)
             set_collection_ivar(scoped.respond_to?(:scoped) ? scoped.scoped : scoped.all)
+          end
+        end
+
+        def apply_search(query)
+          if params[:search].present?
+            self.class.component.apply_search(query, params[:search])
+          else
+            query
           end
         end
 

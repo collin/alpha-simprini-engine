@@ -16,14 +16,29 @@ class Views::Resources::Index < Views::Resources::Base
   
   def body_content
     # page_header
-    section class:'btn-toolbar' do
-      scope_selector
-      sort_selector      
+    section class:'navbar-outer' do    
+      section class:'navbar-inner' do
+        search
+        section class:'btn-toolbar' do
+          scope_selector
+          sort_selector      
+        end
+      end
     end
+
     listing
   end
 
   delegate :scopes, :sortings, to: 'component'
+
+  def search
+    form class:'navbar-search', action:request.fullpath do
+      input type:'search', class:'search-query', name:'search', value:params[:search]
+      params[:scope] and input type:'hidden', name:'scope', value:params[:scope]
+      params[:sort] and input type:'hidden', name:'sort', value:params[:sort]
+      params[:direction] and input type:'hidden', name:'direction', value:params[:direction]
+    end      
+  end
 
   def scope_selector
     return if scopes.none?

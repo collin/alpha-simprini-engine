@@ -8,6 +8,22 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
 
     subclass.class_attribute :sortings
     subclass.sortings = []
+
+    subclass.class_attribute :search_fields
+    subclass.search_fields = []
+  end
+
+  def self.search(*fields)
+    self.search_fields += fields
+  end
+
+  def self.apply_search(query, search_string)
+    clause = model.arel_table[search_fields.first].matches("%#{search_string}%")
+    search_fields.each_with_index do |field, index|
+      next if index.zero?
+      clause = clause.or(model.arel_table[field].matches("%#{search_string}%"))
+    end
+    query.where(clause)
   end
 
   def self.sort(sort_name, display_name=nil, options={})
