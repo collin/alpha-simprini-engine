@@ -1,6 +1,13 @@
 class AlphaSimprini::Admin::Component
+  include AlphaSimprini::Admin::ControllerModule
+
+  def self.tab_text(text=nil)
+    text and @_tab_text = text
+    @_tab_text || name.demodulize.underscore.gsub(/Admin/, '').titlecase
+  end
+
   def self.setup!(&config)
-    controller
+    _controller
     const_set :Views, view_module
     instance_eval(&config)  
     model_name = model.name.underscore.gsub('/', '_').downcase.pluralize
@@ -14,6 +21,7 @@ class AlphaSimprini::Admin::Component
     view.send :include, base_view_module
     view.instance_eval(&config)
     view.admin = engine
+    view.component = self
     view
   end
 
@@ -29,11 +37,20 @@ class AlphaSimprini::Admin::Component
     @controller_name ||= "#{namespace.pluralize}Controller"
   end
 
-  def self.controller
+  def self.generate_controller
+    controller = engine.generate_controller(base_controller(engine.base_controller)) do
+      class_attribute :component
+    end
+    controller.component = self
+    controller
+  end
+
+  def self._controller
     @controller ||= begin
+      # Have to do this here so the constant will have a name.
       controller = engine.const_set(
         controller_name, 
-        Class.new(ApplicationController)
+        generate_controller
       ) 
 
       controller.class_eval do
@@ -49,14 +66,50 @@ class AlphaSimprini::Admin::Component
           get_collection_ivar || begin
             c = end_of_association_chain
             paged = apply_pagination(c)
-            set_collection_ivar(paged.respond_to?(:scoped) ? paged.scoped : paged.all)
+            sorted = apply_sorting(paged)
+            scoped = apply_scoping(sorted)
+            set_collection_ivar(scoped.respond_to?(:scoped) ? scoped.scoped : scoped.all)
           end
         end
 
         def apply_pagination(query)
           query.page(params[:page])
         end
+
+        def apply_scoping(query)
+          if scope = get_scope(params[:scope])
+            scope.apply_to(query)
+          else
+            query
+          end
+        end
+
+        def apply_sorting(query)
+          if sort = get_sorting(params[:sort])
+            sort.apply_to(query, params[:direction] || "desc")
+          else
+            query
+          end
+        end
+
+        def get_sorting(sorting_name=nil)
+          self.class.get_sorting(sorting_name)
+        end
+
+        def self.get_sorting(sorting_name)
+          self.component.get_sorting(sorting_name)
+        end
+
+        def get_scope(scope_name=nil)
+          self.class.get_scope(scope_name)
+        end
+  
+        def self.get_scope(scope_name)
+          self.component.get_scope(scope_name)
+        end
       end
+
+      controller
     end
   end
 
@@ -70,7 +123,15 @@ class AlphaSimprini::Admin::Component
     end
   end
 
+  def self.controller(&config)
+    _controller.class_eval(&config)
+  end
+
   def self.view(&config)
     base_view_module.class_eval(&config)
+  end
+
+  def self.collection(&block)
+    _controller.send :define_method, :collection, &block
   end
 end

@@ -1,4 +1,6 @@
 class AlphaSimprini::Admin < Rails::Engine
+  require "alpha_simprini/admin/controller_module"
+  include AlphaSimprini::Admin::ControllerModule
 
   # When the admin engine is inerited we isolate the namespace and
   # give ourselves reflection on the sections
@@ -44,24 +46,33 @@ class AlphaSimprini::Admin < Rails::Engine
     view_module.class_eval(&block)
   end
 
+  def self.generate_controller(superclass=base_controller, &config)
+    controller = Class.new(superclass) do
+      append_view_path AlphaSimprini::AdminViewResolver.new
+      class_attribute :engine
+      instance_eval(&config) if block_given?
+    end
+    controller.engine = self
+    controller
+  end
+
   def self.generate_view(superclass=AlphaSimprini::Page)
     _view_module = view_module
     _url_helpers = routes.url_helpers
 
-    Class.new(superclass) do
+    view = Class.new(superclass) do
       include AlphaSimprini::Admin::Page
       include _view_module
       include _url_helpers
-    end      
+    end
+
+    view.engine = self
+    view  
   end
 
   def self.index_controller
-    @index_controller ||= begin
-      engine = self
-      Class.new(::ApplicationController) do
-        append_view_path AlphaSimprini::AdminViewResolver.new
-        define_method(:dashboard) { render }
-      end
+    @index_controller ||= generate_controller do
+      define_method(:dashboard) { render }
     end
   end
 

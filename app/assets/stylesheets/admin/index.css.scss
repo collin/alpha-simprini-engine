@@ -11,6 +11,9 @@ table.records {
   a {
     @extend .btn;
   }
+  td {
+    vertical-align: middle;
+  }
 }
 
 form {
@@ -24,6 +27,48 @@ form {
 
   fieldset.variant {
     width: 300px;
+  }
+}
+
+.scopes {
+  @extend .btn-group;
+  list-style: none;
+  .scope {
+    @extend .btn;
+  }
+  .count {
+    @include inline-block;
+    @extend .badge;
+    @extend .badge-info;
+    vertical-align: top;
+    margin-left: 6px;
+  }
+  .scope.current {
+    @extend .btn-primary;
+    .count {
+      @extend .badge-inverse;
+    }
+  }
+}
+
+.sortings {
+  @extend .btn-group;
+  list-style: none;
+  .sorting {
+    @extend .btn;
+  }
+  .sorting.current {
+    @extend .btn-primary;
+  }
+}
+
+.sort-directions {
+  @extend .btn-group;
+  .sort-direction {
+   @extend .btn;
+  }
+  .sort-direction.current {
+    @extend .btn-primary;
   }
 }
 

@@ -6,6 +6,8 @@ module AlphaSimpriniEngine
   require "alpha_simprini/admin"
   require "alpha_simprini/admin/page"
   require "alpha_simprini/admin/component"
+  require "alpha_simprini/admin/scope"
+  require "alpha_simprini/admin/sorting"
   require "alpha_simprini/admin/resource"
   require "alpha_simprini/admin_view_resolver"
   require "alpha_simprini/template_handler"
@@ -41,7 +43,8 @@ module AlphaSimpriniEngine
     end
 
     config.to_prepare do
-      Dir[Rails.root.join("app", "admin", "*")].each do |file|
+      Dir[Rails.root.join("app", "{admin,engines}", "**", "*.rb")].each do |file|
+        next if File.directory?(file)
         Rails.logger.info "loading #{file}!"
         Kernel.load file
       end

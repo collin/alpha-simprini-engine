@@ -1,5 +1,3 @@
-//= require jquery
-//= require jquery_ujs
 
 console.warn("Stolen latest nested_form js, should delete when gem updates");
 jQuery(function($) {
