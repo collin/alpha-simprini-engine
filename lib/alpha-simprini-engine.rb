@@ -1,8 +1,12 @@
 module AlphaSimpriniEngine
+  require "rails/all"
   require "inherited_resources"
   require "kaminari"
   require "alpha_simprini/page"
   require "alpha_simprini/admin"
+  require "alpha_simprini/admin/page"
+  require "alpha_simprini/admin/component"
+  require "alpha_simprini/admin/resource"
   require "alpha_simprini/admin_view_resolver"
   require "alpha_simprini/template_handler"
 
