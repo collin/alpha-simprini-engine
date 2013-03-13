@@ -34,7 +34,7 @@ module AlphaSimprini::Admin::Page
         name = subclass.name.demodulize.underscore.gsub /Admin/, ''
         url = send(:"#{name}_path".downcase)
         attrs = {}
-        attrs[:class] = 'current' if current_page?(url)
+        attrs[:class] = 'current' if request.path.starts_with?(url)
         link_to subclass.tab_text, url, attrs
       end
     end    

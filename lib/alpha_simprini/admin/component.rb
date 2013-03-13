@@ -19,9 +19,9 @@ class AlphaSimprini::Admin::Component
   def self.generate_view(superclass, &config)
     view = engine.generate_view(superclass)
     view.send :include, base_view_module
-    view.instance_eval(&config)
-    view.admin = engine
+    view.engine = engine
     view.component = self
+    view.instance_eval(&config)
     view
   end
 
@@ -126,7 +126,7 @@ class AlphaSimprini::Admin::Component
     @base_view_module ||= begin
       Module.new do
         def action_items
-          self.class.admin.action_items
+          self.class.engine.action_items
         end
       end
     end

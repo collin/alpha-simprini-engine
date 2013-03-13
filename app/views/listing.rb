@@ -62,9 +62,9 @@ module Views::Listing
     if collection.any?
       nav class:'pagination' do
         ol do
-          paginate(collection, theme:'twitter-bootstrap') if collection.respond_to?(:current_page)                  
+          paginate(collection, theme:'twitter-bootstrap') 
         end
-      end
+      end if collection.respond_to?(:current_page)
       table class: collection_class do
         table_header
         collection.each do |item|
