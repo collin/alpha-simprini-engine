@@ -19,11 +19,19 @@ module AlphaSimprini::Admin::Page
   end
 
   def collection_path(options={})
-    polymorphic_path resource_class, options
+    if _uncountable_name
+      send :"#{resource_class.name.demodulize.underscore}_index_path", options
+    else
+      polymorphic_path resource_class, options
+    end
+  end
+
+  def _uncountable_name(klass=resource_class)
+    name = klass.name.singularize
+    name.singularize.pluralize == name
   end
 
   def header_content
-    label :application_title
     navigation
   end
 
@@ -32,7 +40,11 @@ module AlphaSimprini::Admin::Page
       engine.sections.map do |subclass|
         next unless subclass.name
         name = subclass.name.demodulize.underscore.gsub /Admin/, ''
-        url = send(:"#{name}_path".downcase)
+        url = if _uncountable_name(subclass)
+          send(:"#{name}_index_path".downcase)
+        else
+          send(:"#{name}_path".downcase)
+        end
         attrs = {}
         attrs[:class] = 'current' if request.path.starts_with?(url)
         link_to subclass.tab_text, url, attrs

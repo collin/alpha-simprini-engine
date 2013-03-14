@@ -6,6 +6,7 @@ module AlphaSimpriniEngine
   require "alpha_simprini/admin"
   require "alpha_simprini/admin/page"
   require "alpha_simprini/admin/component"
+  require "alpha_simprini/admin/filter"
   require "alpha_simprini/admin/scope"
   require "alpha_simprini/admin/sorting"
   require "alpha_simprini/admin/resource"
@@ -62,6 +63,7 @@ module AlphaSimpriniEngine
       # end
     end
 
-    config.watchable_files << __FILE__
+    config.watchable_files += Dir.glob\
+      File.join(File.dirname(__FILE__), '**', '*.rb')
   end
 end

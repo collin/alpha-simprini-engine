@@ -1,3 +1,4 @@
+# coding: utf-8
 module Views::Listing
   extend ActiveSupport::Concern
   include Kaminari::ActionViewExtension
@@ -5,9 +6,16 @@ module Views::Listing
   included do
     class_attribute :no_actions
     class_attribute :admin
+    class_attribute :iterator_method
+    class_attribute :header_text
+    self.iterator_method = :each
   end
 
   module ClassMethods
+    def header(text)
+      self.header_text = text
+    end
+
     def content_fields
       @content_fields ||= []
     end
@@ -21,7 +29,11 @@ module Views::Listing
     end
 
     def action_item(name, action, &block)
-      self. action_items << [name, action]
+      self.action_items << [name, action]
+    end
+
+    def iterator(method)
+      self.iterator_method = method
     end
   end
 
@@ -29,16 +41,12 @@ module Views::Listing
     self.class.content_fields
   end
 
-  def collection_class
-    [collection.name.pluralize.dasherize.downcase, :records]
-  end
-
   def item_class
     collection.name.dasherize.downcase
   end
 
   def blank_slate
-    text "Blank Slate"
+    text "Blank Slate" unless collection.any?
   end
 
   # def listing
@@ -60,20 +68,30 @@ module Views::Listing
   def listing
     blank_slate
     if collection.any?
-      nav class:'pagination' do
-        ol do
-          paginate(collection, theme:'twitter-bootstrap') 
-        end
-      end if collection.respond_to?(:current_page)
       table class: collection_class do
         table_header
-        collection.each do |item|
-          row(item)
-        end
+        each_item &method(:row)
       end
+      pagination
     end    
   end
 
+  def each_item(&block)
+    collection.send(iterator, &block)
+  end
+
+  def iterator
+    self.class.iterator_method
+  end
+
+  def pagination
+    return unless collection.respond_to?(:current_page)
+    nav class:'pagination' do
+      ol do
+        paginate(collection, theme:'twitter-bootstrap') 
+      end
+    end
+  end
   
   def no_actions
     self.class.no_actions
@@ -98,7 +116,19 @@ module Views::Listing
       link_to name, send("#{action}_resource_path", item), method: 'post'
     end
   end
-  
+
+  def collection_class
+    if self.class.header_text
+      [self.class.header_text.downcase.sub(' ', '-'), :records]
+    else
+      [collection.name.pluralize.dasherize.downcase, :records]
+    end
+  end
+
+  def header_text
+    self.class.header_text or collection.name.pluralize
+  end
+
   def list_header
     content_fields.each do |(field, _)|
       span field.to_s.titlecase
@@ -126,7 +156,7 @@ module Views::Listing
           if block
             instance_exec item, &block
           else
-            text item.send(field).presence || "--"
+            text item.send(field).presence || "—"
           end
         end
       end  
@@ -141,7 +171,7 @@ module Views::Listing
         if block
           instance_exec item, &block
         else
-          text item.send(field).presence || "--"
+          text item.send(field).presence || "—"
         end        
       end
     end

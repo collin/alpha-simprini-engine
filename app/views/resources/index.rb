@@ -11,7 +11,7 @@ class Views::Resources::Index < Views::Resources::Base
   end
   
   def blank_slate
-    link_to "Create a #{resource_name}", new_resource_path, class: 'new'
+    link_to "Create a #{resource_name}", new_resource_path, class: 'new' unless no_actions
   end
   
   def body_content
@@ -21,7 +21,8 @@ class Views::Resources::Index < Views::Resources::Base
         search
         section class:'btn-toolbar' do
           scope_selector
-          sort_selector      
+          sort_selector
+          filter_selector
         end
       end
     end
@@ -29,7 +30,30 @@ class Views::Resources::Index < Views::Resources::Base
     listing
   end
 
-  delegate :scopes, :sortings, :search_fields, to: 'component'
+  delegate :scopes, :sortings, :search_fields, :filters, to: 'component'
+
+  def filter_param_names
+    filters.map(&:param_name)
+  end
+
+  def filter_selector
+    return if filters.none?
+    filters.each do |filter|    
+      select class:'auto-filter', name:filter.param_name do
+        if filter.include_blank?
+          option "Unfiltered",
+            'data-href' => collection_path(params.slice(:scope, :direction, *(filter_param_names - [filter.param_name])))
+        end
+
+        filter.options_for_select.each do |content, value|
+          option content, 
+            value:value, 
+            selected:value == params[filter.param_name],
+            'data-href' => collection_path(params.slice(:scope, :direction, *filter_param_names).merge(filter.param_name => value))
+        end
+      end
+    end
+  end
 
   def search
     return if search_fields.none?
@@ -48,7 +72,7 @@ class Views::Resources::Index < Views::Resources::Base
         scope_class = "scope"
         scope_class += " current" if scope.matches(params[:scope])
 
-        link_to collection_path(scope.path_options.reverse_merge(params.slice(:sort, :direction))), class: scope_class do
+        link_to collection_path(scope.path_options.reverse_merge(params.slice(:sort, :direction, *filter_param_names))), class: scope_class do
           span scope.display_name#, class:"lead"
           text " "
           span scope.count(collection.unscoped), class:"count"
@@ -64,7 +88,7 @@ class Views::Resources::Index < Views::Resources::Base
         sorting_class = "sorting"
         sorting_class += " current" if sorting.matches(params[:sort])
 
-        link_to collection_path(sorting.path_options.reverse_merge(params.slice(:scope, :direction))), class: sorting_class do
+        link_to collection_path(sorting.path_options.reverse_merge(params.slice(:scope, :direction, *filter_param_names))), class: sorting_class do
           span sorting.display_name#, class:"lead"
         end
       end

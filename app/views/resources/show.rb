@@ -38,7 +38,12 @@ class Views::Resources::Show < Views::Resources::Base
 
   def associations_content
     self.class.has_manys.each do |name, has_many|
-      widget has_many.new(collection: resource.send(name))
+      display_relation(name)
     end
+  end
+
+  def display_relation(name)
+    relation = self.class.has_manys[name]
+    widget relation.new(collection: resource.send(name))
   end
 end

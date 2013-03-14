@@ -1,6 +1,29 @@
 class AlphaSimprini::Admin::Component
   include AlphaSimprini::Admin::ControllerModule
 
+  class_attribute :engine
+  class_attribute :model
+
+  def self.inherited(subclass)
+    super
+    
+    subclass.class_attribute :scopes
+    subclass.scopes = []
+
+    subclass.class_attribute :sortings
+    subclass.sortings = []
+
+    subclass.class_attribute :search_fields
+    subclass.search_fields = []
+
+    subclass.class_attribute :filters
+    subclass.filters = []
+  end
+
+  class << self
+    delegate :append_routes, to: 'engine'
+  end
+
   def self.tab_text(text=nil)
     text and @_tab_text = text
     @_tab_text || name.demodulize.underscore.gsub(/Admin/, '').titlecase
@@ -10,22 +33,22 @@ class AlphaSimprini::Admin::Component
     _controller
     const_set :Views, view_module
     instance_eval(&config)  
-    model_name = model.name.underscore.gsub('/', '_').downcase.pluralize
+    model_name = model.to_s.underscore.gsub('/', '_').downcase.pluralize
     engine.append_routes do
       resources model_name
     end
   end
 
-  def self.generate_view(superclass, &config)
+  def self.generate_view(superclass=AlphaSimprini::Page, &config)
     view = engine.generate_view(superclass)
     view.send :include, base_view_module
     view.engine = engine
     view.component = self
-    view.instance_eval(&config)
+    view.class_eval(&config)
     view
   end
 
-  def self._view(name, superclass, &config)
+  def self._view(name, superclass=AlphaSimprini::Page, &config)
     view_module.const_set name, generate_view(superclass, &config)
   end
 
@@ -37,12 +60,43 @@ class AlphaSimprini::Admin::Component
     @controller_name ||= "#{namespace.pluralize}Controller"
   end
 
+  def self.generate(engine, model)
+    subclass = Class.new(self)
+    subclass.engine = engine
+    subclass.model = model
+    subclass
+  end
+
   def self.generate_controller
     controller = engine.generate_controller(base_controller(engine.base_controller)) do
       class_attribute :component
     end
     controller.component = self
     controller
+  end
+
+  def self.index(&config)
+    _view :Index, Views::Resources::Index, &config
+  end
+
+  def self.show(&config)
+    _view :Show, Views::Resources::Show, &config
+  end
+
+  def self.new_form(&config)
+    _view :New, Views::Resources::New do
+      @form_block = config
+    end
+  end
+
+  def self.edit_form(&config)
+    _view :Edit, Class.new(Views::Resources::Edit) do
+      @form_block = config
+    end
+  end
+
+  def self.namespace
+    model.to_s.demodulize
   end
 
   def self._controller
@@ -68,7 +122,8 @@ class AlphaSimprini::Admin::Component
             searched = apply_search(chain)
             paged = apply_pagination(searched)
             sorted = apply_sorting(paged)
-            scoped = apply_scoping(sorted)
+            filtered = apply_filters(sorted)
+            scoped = apply_scoping(filtered)
             set_collection_ivar(scoped.respond_to?(:scoped) ? scoped.scoped : scoped.all)
           end
         end
@@ -91,6 +146,15 @@ class AlphaSimprini::Admin::Component
           else
             query
           end
+        end
+
+        def apply_filters(query)
+          filters = self.class.component.get_filters params.keys.grep(/^filter_/)
+          return query if filters.none?
+          filters.each do |filter|
+            query = filter.apply_to(query, params[filter.param_name])
+          end
+          query
         end
 
         def apply_sorting(query)

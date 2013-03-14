@@ -17,6 +17,10 @@ class Views::Resources::ShowField < Erector::Widget
     text string
   end
 
+  def display_fixnum(number)
+    text number
+  end
+
   def display_money(money)
     text money.symbol + money.to_s
   end

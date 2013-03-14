@@ -1,17 +1,5 @@
 class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
-  class_attribute :engine
-  class_attribute :model
-
-  def self.inherited(subclass)
-    subclass.class_attribute :scopes
-    subclass.scopes = []
-
-    subclass.class_attribute :sortings
-    subclass.sortings = []
-
-    subclass.class_attribute :search_fields
-    subclass.search_fields = []
-  end
+  # def self.inherited(subclass); end
 
   def self.search(*fields)
     self.search_fields += fields
@@ -24,6 +12,11 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
       clause = clause.or(model.arel_table[field].matches("%#{search_string}%"))
     end
     query.where(clause)
+  end
+
+  def self.filter(filter_name, display_name=nil, options)
+    display_name ||= filter_name.to_s.titlecase
+    self.filters << AlphaSimprini::Admin::Filter.new(self, filter_name, display_name, options)
   end
 
   def self.sort(sort_name, display_name=nil, options={})
@@ -40,42 +33,15 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
     scopes.detect{|scope| scope.scope_name.to_s == scope_name }
   end
 
+  def self.get_filters(filter_keys)
+    filters.find_all{|filter| filter_keys.include? filter.param_name.to_s }
+  end
+
   def self.get_sorting(sorting_name)
     if sorting = sortings.detect{|sorting| sorting.sorting_name.to_s == sorting_name }
       sorting
     else
       sortings.detect{|sorting| sorting.default? }
-    end
-  end
-
-  def self.generate(engine, model)
-    subclass = Class.new(self)
-    subclass.engine = engine
-    subclass.model = model
-    subclass
-  end
-
-  def self.namespace
-    model.name.demodulize
-  end
-
-  def self.index(&config)
-    _view :Index, Views::Resources::Index, &config
-  end
-
-  def self.show(&config)
-    _view :Show, Views::Resources::Show, &config
-  end
-
-  def self.new_form(&config)
-    _view :New, Views::Resources::New do
-      @form_block = config
-    end
-  end
-
-  def self.edit_form(&config)
-    _view :Edit, Class.new(Views::Resources::Edit) do
-      @form_block = config
     end
   end
 end

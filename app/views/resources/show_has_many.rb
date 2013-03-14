@@ -4,7 +4,10 @@ class Views::Resources::ShowHasMany < Erector::Widget
 
   attr_accessor :collection
 
+
   def content
+    h1 header
     listing
   end
+
 end
