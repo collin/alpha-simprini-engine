@@ -43,9 +43,10 @@ module AlphaSimpriniEngine
     end
 
     config.to_prepare do
-      AlphaSimprini::Admin.descendants.each do |subclass|
-        subclass.reset!
-      end
+      # Rails.logger.info "AS::Engines: #{AlphaSimprini::Admin.descendants}"
+      # AlphaSimprini::Admin.descendants.each do |subclass|
+      #   subclass.reset!
+      # end
 
       Dir[Rails.root.join("app", "{admin,engines}", "**", "*.rb")].each do |file|
         next if File.directory?(file)
@@ -53,9 +54,12 @@ module AlphaSimpriniEngine
         Kernel.load file
       end
 
-      AlphaSimprini::Admin.descendants.each do |subclass|
-        subclass.routes.finalize!
-      end
+      # Routes must be reloaded and re-mounted every time this engine is
+      #  prepared. mount prefixes get screwed up when they arent reloaded.
+      Rails.application.routes_reloader.reload!
+      # AlphaSimprini::Admin.descendants.each do |subclass|
+      #   subclass.routes.finalize!
+      # end
     end
 
     config.watchable_files << __FILE__
