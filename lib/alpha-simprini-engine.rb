@@ -43,13 +43,17 @@ module AlphaSimpriniEngine
     end
 
     config.to_prepare do
+      AlphaSimprini::Admin.descendants.each do |subclass|
+        subclass.reset!
+      end
+
       Dir[Rails.root.join("app", "{admin,engines}", "**", "*.rb")].each do |file|
         next if File.directory?(file)
         Rails.logger.info "loading #{file}!"
         Kernel.load file
       end
 
-      AlphaSimprini::Admin.subclasses.each do |subclass|
+      AlphaSimprini::Admin.descendants.each do |subclass|
         subclass.routes.finalize!
       end
     end

@@ -1,5 +1,5 @@
 class AlphaSimprini::Admin < Rails::Engine
-  require "alpha_simprini/admin/controller_module"
+  Kernel.require "alpha_simprini/admin/controller_module"
   include AlphaSimprini::Admin::ControllerModule
 
   # When the admin engine is inerited we isolate the namespace and
@@ -8,18 +8,21 @@ class AlphaSimprini::Admin < Rails::Engine
     subclass.instance_eval do
       self.called_from = Rails.root
       class_attribute :sections
-      self.sections = []
-      isolate_namespace self
-
-      const_set(:IndexController, index_controller)
-      const_set(:Index, Module.new)
-      const_get(:Index).send(:const_set, :Views, views)
-      views.send(:const_set, :Dashboard, dashboard)
-
+      reset!
       append_routes do
         root to: "index#dashboard"
       end
     end
+  end
+
+  def self.reset!
+    self.sections = []
+    isolate_namespace self
+
+    const_set(:IndexController, index_controller)
+    const_set(:Index, Module.new)
+    const_get(:Index).send(:const_set, :Views, views)
+    views.send(:const_set, :Dashboard, dashboard)
   end
 
   def self.action_items
