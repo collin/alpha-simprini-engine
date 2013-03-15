@@ -45,6 +45,10 @@ module AlphaSimprini::Admin
       @view_module ||= Module.new
     end
 
+    def controller_module
+      @controller_module ||= Module.new
+    end
+
     def views
       @views ||= Module.new
     end
@@ -53,14 +57,20 @@ module AlphaSimprini::Admin
       view_module.class_eval(&block)
     end
 
+    def controller(&block)
+      controller_module.class_eval(&block)
+    end
+
     def generate_controller(superclass=base_controller, &config)
       _url_helpers = routes.url_helpers
+      _controller_module = controller_module
 
       controller = Class.new(superclass) do
         append_view_path AlphaSimprini::AdminViewResolver.new
         class_attribute :engine
         include _url_helpers
         helper _url_helpers
+        include _controller_module
         instance_eval(&config) if block_given?
       end
       controller.send(:remove_instance_variable, :@parent_name)
