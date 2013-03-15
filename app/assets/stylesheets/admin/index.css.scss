@@ -16,6 +16,10 @@ table.records {
   td {
     vertical-align: middle;
   }
+  thead {
+    position: -webkit-sticky;
+    top: 0px;
+  }
 }
 
 form {
@@ -26,10 +30,31 @@ form {
       @include inline-block;
     }
   }
+}
 
-  fieldset.variant {
-    width: 300px;
+[view=show] #content {
+  @extend .container;
+}
+
+.filters {
+  width: 200px;
+  float: left;
+  text-align: right;
+  h3 {
+    text-align: left;
+    margin-top: 1em;
   }
+  [type=search] {
+    width: 190px;
+    margin-bottom: 0;
+  }
+  .form {
+    width: auto;
+  }
+}
+
+.listing.filtered {
+  margin-left: 220px;
 }
 
 .pagination {
@@ -52,10 +77,15 @@ form {
 }
 
 .scopes {
-  @extend .btn-group;
   list-style: none;
+  @include clearfix;
   .scope {
     @extend .btn;
+    @include border-radius(0);
+    @include clearfix;
+    text-align: right;
+    display: block;
+    float: none;
   }
   .count {
     @include inline-block;
@@ -63,6 +93,7 @@ form {
     @extend .badge-info;
     vertical-align: top;
     margin-left: 6px;
+    float: left;
   }
   .scope.current {
     @extend .btn-primary;
@@ -73,10 +104,14 @@ form {
 }
 
 .sortings {
-  @extend .btn-group;
   list-style: none;
   .sorting {
     @extend .btn;
+    @include border-radius(0);
+    @include clearfix;
+    text-align: right;
+    display: block;
+    float: none;
   }
   .sorting.current {
     @extend .btn-primary;
@@ -86,7 +121,9 @@ form {
 .sort-directions {
   @extend .btn-group;
   .sort-direction {
-   @extend .btn;
+    @extend .btn;
+    float: none;
+    font-size: 12px;
   }
   .sort-direction.current {
     @extend .btn-primary;
@@ -134,6 +171,39 @@ header {
         color: #454545;
       }
     }
+  }
+}
+
+form { 
+  @extend .container;
+  margin: 0 auto;
+  input, select {
+  }
+  select.datetime {
+    width: auto;
+  }
+  label {
+    @extend .span2;
+    @extend .lead;
+    padding-right: 10px;
+    text-align: right;
+  }
+  .input {
+    @extend .span10
+  }
+  .input.boolean {
+    @extend .span3;
+    paddin-right: 20px; 
+    input {
+      float: right;
+      margin-right: 56px;
+      margin-top: 8px;
+    }
+  }
+  [type=submit] {
+    @extend .btn;
+    @extend .btn-primary;
+    float: right;
   }
 }
 

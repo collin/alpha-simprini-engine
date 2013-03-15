@@ -4,6 +4,7 @@ module AlphaSimpriniEngine
   require "kaminari"
   require "alpha_simprini/page"
   require "alpha_simprini/admin"
+  require "alpha_simprini/admin/path_helpers"
   require "alpha_simprini/admin/page"
   require "alpha_simprini/admin/component"
   require "alpha_simprini/admin/filter"

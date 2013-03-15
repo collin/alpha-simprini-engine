@@ -49,6 +49,7 @@ module Views::Listing
     text "Blank Slate" unless collection.any?
   end
 
+  # SAVEME: list based listing
   # def listing
   #   blank_slate
   #   if collection.any?
@@ -65,7 +66,7 @@ module Views::Listing
   #   end    
   # end
 
-  def listing
+  def table_listing
     blank_slate
     if collection.any?
       table class: collection_class do
@@ -75,6 +76,7 @@ module Views::Listing
       pagination
     end    
   end
+  alias listing table_listing
 
   def each_item(&block)
     collection.send(iterator, &block)
@@ -111,7 +113,7 @@ module Views::Listing
   def action_links(item)
     link_to "View", resource_path(item)
     link_to "Edit", edit_resource_path(item)
-    link_to "Delete", resource_path(item), method: 'delete'
+    link_to "Delete", resource_path(item), method: 'delete', confirm: 'Are you sure you want to delete this?'
     self.action_items.each do |(name, action, block)|
       link_to name, send("#{action}_resource_path", item), method: 'post'
     end

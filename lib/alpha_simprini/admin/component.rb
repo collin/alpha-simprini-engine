@@ -110,6 +110,36 @@ class AlphaSimprini::Admin::Component
       controller.class_eval do
         append_view_path AlphaSimprini::AdminViewResolver.new
         inherit_resources
+        include AlphaSimprini::Admin::PathHelpers
+
+        def resource_path(_resource=resource, options={})
+          polymorphic_path _resource, options
+        end
+
+        def new_resource_path(options={})
+          polymorphic_path resource_class, {action:'new'}.reverse_merge(options)
+        end
+
+        def edit_resource_path(_resource=resource, options={})
+          polymorphic_path _resource, {action:'edit'}.reverse_merge(options)
+        end
+
+        def collection_path(options={})
+          if _uncountable_name
+            send :"#{resource_class.name.demodulize.underscore}_index_path", options
+          else
+            polymorphic_path resource_class, options
+          end
+        end
+        helper_method :resource_path, :new_resource_path, :edit_resource_path, :collection_path
+
+        def create
+          create! { collection_path }
+        end
+
+        def update
+          update! { collection_path }
+        end
 
         def resource_name
           resource_class.name

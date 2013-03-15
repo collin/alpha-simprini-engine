@@ -1,29 +1,10 @@
 module AlphaSimprini::Admin::Page
   extend ActiveSupport::Concern
+  
   included do
     class_attribute :engine
     class_attribute :component
     script 'alpha_simprini/admin'        
-  end
-
-  def resource_path(_resource=resource, options={})
-    polymorphic_path _resource, options
-  end
-
-  def new_resource_path(options={})
-    polymorphic_path resource_class, {action:'new'}.reverse_merge(options)
-  end
-
-  def edit_resource_path(_resource=resource, options={})
-    polymorphic_path _resource, {action:'edit'}.reverse_merge(options)
-  end
-
-  def collection_path(options={})
-    if _uncountable_name
-      send :"#{resource_class.name.demodulize.underscore}_index_path", options
-    else
-      polymorphic_path resource_class, options
-    end
   end
 
   def _uncountable_name(klass=resource_class)

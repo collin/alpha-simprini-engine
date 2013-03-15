@@ -2,35 +2,60 @@
 class Views::Resources::Index < Views::Resources::Base
   include Views::Listing
 
+  def self.create(value=nil)
+    @create = value unless value.nil?
+    if defined? @create
+      @create
+    else
+      true
+    end
+  end
+
   def self.action_items
     @action_items ||= []
   end
   
   def page_header
-    h1 "#{resource_name} Index"
+    h3 "#{resource_name} Index"
   end
   
   def blank_slate
-    link_to "Create a #{resource_name}", new_resource_path, class: 'new' unless no_actions
+    link_to "Create a #{resource_name}", new_resource_path, class: 'new' if create?
+  end
+
+  def create?
+    not(no_actions) && self.class.create
   end
   
   def body_content
     # page_header
-    section class:'navbar-outer' do    
-      section class:'navbar-inner' do
-        search
-        section class:'btn-toolbar' do
-          scope_selector
-          sort_selector
-          filter_selector
-        end
+    section class:'container-fluid' do    
+      display_filters
+      section class:listing_class do    
+        listing
       end
     end
+  end
 
-    listing
+  def listing_class
+    [:listing, any_filters? ? :filtered : :unfiltered]
   end
 
   delegate :scopes, :sortings, :search_fields, :filters, to: 'component'
+
+  def display_filters
+    return unless any_filters?
+    section class:'filters' do    
+      search
+      scope_selector
+      sort_selector
+      filter_selector
+    end
+  end
+
+  def any_filters?
+    filters.any? || search_fields.any? || scopes.any? || scopes.any?
+  end
 
   def filter_param_names
     filters.map(&:param_name)
@@ -39,6 +64,7 @@ class Views::Resources::Index < Views::Resources::Base
   def filter_selector
     return if filters.none?
     filters.each do |filter|    
+      h3 "Filter #{filter.display_name}"
       select class:'auto-filter', name:filter.param_name do
         if filter.include_blank?
           option "Unfiltered",
@@ -57,8 +83,9 @@ class Views::Resources::Index < Views::Resources::Base
 
   def search
     return if search_fields.none?
-    form class:'navbar-search', action:request.fullpath do
-      input type:'search', class:'search-query', name:'search', value:params[:search]
+    h3 "Search"
+    form action:request.fullpath do
+      input type:'search', name:'search', value:params[:search]
       params[:scope] and input type:'hidden', name:'scope', value:params[:scope]
       params[:sort] and input type:'hidden', name:'sort', value:params[:sort]
       params[:direction] and input type:'hidden', name:'direction', value:params[:direction]
@@ -67,6 +94,7 @@ class Views::Resources::Index < Views::Resources::Base
 
   def scope_selector
     return if scopes.none?
+    h3 "Scope"
     nav class:'scopes' do
       scopes.each_with_index do |scope, index|
         scope_class = "scope"
@@ -82,6 +110,7 @@ class Views::Resources::Index < Views::Resources::Base
   end
 
   def sort_selector
+    h3 "Sort"
     return if sortings.none?
     nav class:'sortings' do
       sortings.each_with_index do |sorting, index|
@@ -94,6 +123,7 @@ class Views::Resources::Index < Views::Resources::Base
       end
     end
 
+    h3 "Sort Direction"
     nav class:'sort-directions' do
       descending_path = url_for({only_path:true}.reverse_merge(params).except('direction'))
       ascending_path = url_for({direction:'asc', only_path:true}.reverse_merge(params))
