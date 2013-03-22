@@ -41,6 +41,25 @@ module AlphaSimprini::Admin
       @dashboard ||= generate_view
     end
 
+    # Abusing singleton_method_added
+    # This gives us the dsl
+    # 
+    # ```ruby
+    # Admin.register "Something" do
+    #   def view.view_method
+    #   end
+    # end
+    # ```
+    #
+    # Instead of this:
+    # ```ruby
+    # Admin.register "Something" do
+    #   view do
+    #     def view_method
+    #     end
+    #   end
+    # end
+    # ```
     def view_module
       @view_module ||= Module.new
     end
@@ -92,19 +111,34 @@ module AlphaSimprini::Admin
 
     def index_controller
       @index_controller ||= generate_controller do
-        define_method(:dashboard) { render }
       end
     end
 
     def register model, &config
-      if model.is_a?(Class) && model < ActiveRecord::Base
+      # relax the AR::Base requirement on classes
+      if model.is_a?(Class) # && model < ActiveRecord::Base
         name = model.name.demodulize
-        section = const_set(name.pluralize, Resource.generate(self, model))
+        section = const_set(name.pluralize.gsub(/[^a-zA-Z]/, ''), Resource.generate(self, model))
+        section.setup!(&config)
+        self.sections << section
+      elsif model.is_a?(ActiveRecord::Relation)
+        unless model.respond_to?(:scope_name)
+          raise "AlphaSimprini only deals with ActiveRecord::Relations that come from named scopes."
+        end
+
+        if model.chained?
+          raise "AlphaSimprini can not properly use scopes that have been chained."
+        end
+
+        name = model.scope_name.to_s.classify
+        section = const_set(name.pluralize.gsub(/[^a-zA-Z]/, ''), ScopedResource.generate(self, model))
+        section.tab_text model.scope_name.to_s.titlecase
         section.setup!(&config)
         self.sections << section
       else
         name = model.to_s.demodulize
-        section = const_set(name.pluralize, Component.generate(self, model))
+        section = const_set(name.pluralize.gsub(/[^a-zA-Z]/, ''), Component.generate(self, model))
+        section.tab_text model.to_s
         section.setup!(&config)
         self.sections << section
       end

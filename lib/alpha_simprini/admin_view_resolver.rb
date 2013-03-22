@@ -1,7 +1,8 @@
 class AlphaSimprini::AdminViewResolver < ::ActionView::Resolver
   def find_templates(name, prefix, partial, details)
-    Rails.logger.info "Looking for " + "#{prefix}/views/#{name}".classify
-    view = "#{prefix}/views/#{name}".classify.constantize rescue nil
+    lookup = "#{prefix}/views/#{name}".gsub('base/', '')
+    Rails.logger.info "Looking for " + lookup.classify
+    view = lookup.classify.constantize rescue nil
     return [] unless view
 
     identifier = view.name

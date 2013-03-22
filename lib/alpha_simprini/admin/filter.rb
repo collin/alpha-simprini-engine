@@ -23,7 +23,11 @@ class AlphaSimprini::Admin::Filter
   end
 
   def apply_to(query, value)
-    query.where(filter_name => value)
+    if @options[:apply]
+      @options[:apply].call(query, value)
+    else
+      query.where(filter_name => value)
+    end
   end
 
   # def path_options

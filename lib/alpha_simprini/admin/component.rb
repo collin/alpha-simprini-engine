@@ -33,9 +33,53 @@ class AlphaSimprini::Admin::Component
     _controller
     const_set :Views, view_module
     instance_eval(&config)  
-    model_name = model.to_s.underscore.gsub('/', '_').downcase.pluralize
+    route_component
+  end
+
+  def self.route_component
+    _route_name = route_name
+    _target = "#{_route_name}#index"
     engine.append_routes do
-      resources model_name
+      get _route_name => _target
+    end
+  end
+
+  def self.namespace
+    model.to_s.demodulize
+  end
+
+  def self.singular_model_name
+    model.to_s.underscore.gsub('/', '_').downcase
+  end
+
+  def self.model_name
+    singular_model_name.pluralize
+  end
+
+  def self.route_name
+    model_name.gsub(/[^a-zA-Z]/, ' ').squeeze(' ').gsub(/ /, "_")
+  end
+
+  def self.has_many(relation_name, &config)
+    _route_name = route_name
+    _relation_name = relation_name
+
+    klass = model.reflect_on_association(relation_name).klass
+    child_resource = const_set(
+      klass.name.demodulize.pluralize,
+      AlphaSimprini::Admin::Resource.generate(engine, klass)
+    )
+    child_resource.setup!(&config) if block_given?
+
+    _singular_model_name = singular_model_name
+    child_resource.controller do
+      belongs_to _singular_model_name
+    end
+
+    engine.append_routes do
+      resources _route_name do
+        resources _relation_name
+      end
     end
   end
 
@@ -57,7 +101,7 @@ class AlphaSimprini::Admin::Component
   end
 
   def self.controller_name
-    @controller_name ||= "#{namespace.pluralize}Controller"
+    @controller_name ||= "#{namespace.pluralize.gsub(/[^a-zA-Z]/, '')}Controller"
   end
 
   def self.generate(engine, model)
@@ -95,8 +139,9 @@ class AlphaSimprini::Admin::Component
     end
   end
 
-  def self.namespace
-    model.to_s.demodulize
+  def self.forms(&config)
+    new_form(&config)
+    edit_form(&config)
   end
 
   def self._controller
@@ -106,112 +151,9 @@ class AlphaSimprini::Admin::Component
         controller_name, 
         generate_controller
       ) 
-
       controller.class_eval do
-        append_view_path AlphaSimprini::AdminViewResolver.new
-        inherit_resources
         include AlphaSimprini::Admin::PathHelpers
-
-        def resource_path(_resource=resource, options={})
-          polymorphic_path _resource, options
-        end
-
-        def new_resource_path(options={})
-          polymorphic_path resource_class, {action:'new'}.reverse_merge(options)
-        end
-
-        def edit_resource_path(_resource=resource, options={})
-          polymorphic_path _resource, {action:'edit'}.reverse_merge(options)
-        end
-
-        def collection_path(options={})
-          if _uncountable_name
-            send :"#{resource_class.name.demodulize.underscore}_index_path", options
-          else
-            polymorphic_path resource_class, options
-          end
-        end
-        helper_method :resource_path, :new_resource_path, :edit_resource_path, :collection_path
-
-        def create
-          create! { collection_path }
-        end
-
-        def update
-          update! { collection_path }
-        end
-
-        def resource_name
-          resource_class.name
-        end
-        helper_method :resource_name
-      
-        def collection
-          get_collection_ivar || begin
-            chain = end_of_association_chain
-            searched = apply_search(chain)
-            paged = apply_pagination(searched)
-            sorted = apply_sorting(paged)
-            filtered = apply_filters(sorted)
-            scoped = apply_scoping(filtered)
-            set_collection_ivar(scoped.respond_to?(:scoped) ? scoped.scoped : scoped.all)
-          end
-        end
-
-        def apply_search(query)
-          if params[:search].present?
-            self.class.component.apply_search(query, params[:search])
-          else
-            query
-          end
-        end
-
-        def apply_pagination(query)
-          query.page(params[:page])
-        end
-
-        def apply_scoping(query)
-          if scope = get_scope(params[:scope])
-            scope.apply_to(query)
-          else
-            query
-          end
-        end
-
-        def apply_filters(query)
-          filters = self.class.component.get_filters params.keys.grep(/^filter_/)
-          return query if filters.none?
-          filters.each do |filter|
-            query = filter.apply_to(query, params[filter.param_name])
-          end
-          query
-        end
-
-        def apply_sorting(query)
-          if sort = get_sorting(params[:sort])
-            sort.apply_to(query, params[:direction] || "desc")
-          else
-            query
-          end
-        end
-
-        def get_sorting(sorting_name=nil)
-          self.class.get_sorting(sorting_name)
-        end
-
-        def self.get_sorting(sorting_name)
-          self.component.get_sorting(sorting_name)
-        end
-
-        def get_scope(scope_name=nil)
-          self.class.get_scope(scope_name)
-        end
-  
-        def self.get_scope(scope_name)
-          self.component.get_scope(scope_name)
-        end
       end
-
       controller
     end
   end
@@ -227,14 +169,27 @@ class AlphaSimprini::Admin::Component
   end
 
   def self.controller(&config)
-    _controller.class_eval(&config)
+    if block_given?
+      _controller.class_eval(&config)
+    else
+      _controller
+    end
   end
 
+
   def self.view(&config)
-    base_view_module.class_eval(&config)
+    if block_given?
+      base_view_module.class_eval(&config)
+    else
+      base_view_module
+    end
   end
 
   def self.collection(&block)
     _controller.send :define_method, :collection, &block
+  end
+
+  def self.relation(&block)
+    _controller.send :define_method, :end_of_association_chain, &block    
   end
 end

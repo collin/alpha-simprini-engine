@@ -5,15 +5,16 @@ class AlphaSimprini::Admin::Scope
     @component = component
     @scope_name = scope_name
     @display_name = display_name
+    @options = options
   end
 
   def matches(scope=nil)
-    return true if scope.nil? && scope_name == :all
+    return true if scope.nil? && @options[:default]
     return scope == scope_name.to_s
   end
 
   def path_options
-    if scope_name == :all
+    if @options[:default]
       {}
     else
       {scope:scope_name}
@@ -21,7 +22,11 @@ class AlphaSimprini::Admin::Scope
   end
 
   def apply_to(query)
-    query.send(scope_name)
+    if scope_name == :all
+      query
+    else
+      query.send(scope_name)
+    end  
   end
 
   def count(query)

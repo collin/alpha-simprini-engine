@@ -1,3 +1,4 @@
+# coding: utf-8
 class Views::Resources::Show < Views::Resources::Base
   def self.field(name, &renderer)
     fields[name] = [Class.new(Views::Resources::ShowField), renderer]
@@ -15,10 +16,6 @@ class Views::Resources::Show < Views::Resources::Base
     @fields ||= {}
   end
 
-  def back_link
-    p link_to "back to #{resource_name.pluralize} index", collection_path      
-  end
-
   def body_content
     back_link
     resource_content
@@ -27,13 +24,15 @@ class Views::Resources::Show < Views::Resources::Base
   end
 
   def resource_content
-    self.class.fields.each do |name, (field, renderer)|
-      widget field.new(name: name, renderer:renderer, resource:resource)
+    dl do
+      self.class.fields.each do |name, (field, renderer)|
+        widget field.new(name: name, renderer:renderer, resource:resource)
+      end      
     end
   end  
 
   def edit_link
-    p link_to "edit", edit_resource_path      
+    p link_to "edit", edit_resource_path
   end  
 
   def associations_content
@@ -44,6 +43,6 @@ class Views::Resources::Show < Views::Resources::Base
 
   def display_relation(name)
     relation = self.class.has_manys[name]
-    widget relation.new(collection: resource.send(name))
+    widget relation.new(collection: resource.send(name), relation_name:name)
   end
 end

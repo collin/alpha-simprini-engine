@@ -2,15 +2,6 @@
 class Views::Resources::Index < Views::Resources::Base
   include Views::Listing
 
-  def self.create(value=nil)
-    @create = value unless value.nil?
-    if defined? @create
-      @create
-    else
-      true
-    end
-  end
-
   def self.action_items
     @action_items ||= []
   end
@@ -20,11 +11,26 @@ class Views::Resources::Index < Views::Resources::Base
   end
   
   def blank_slate
-    link_to "Create a #{resource_name}", new_resource_path, class: 'new' if create?
-  end
+    return if collection.any?
+    h1 do
+      text "No #{resource_name.pluralize.titlecase} found"
+      if scopes.any?
+        scope = scopes.detect{|scope| scope.matches(params[:scope])}
+        text " in scope '#{scope.display_name}'."
+      else
+        text "."
+      end
 
-  def create?
-    not(no_actions) && self.class.create
+    end
+    if params[:search]
+      h2 do
+        text "Maybe the search term: '#{params[:search]}' is too restrictive."
+      end
+    end
+    h3 do
+      text "Try changing your scope and search options."
+    end
+    # link_to "Create a #{resource_name}", new_resource_path, class: 'new' if create?
   end
   
   def body_content
@@ -68,14 +74,14 @@ class Views::Resources::Index < Views::Resources::Base
       select class:'auto-filter', name:filter.param_name do
         if filter.include_blank?
           option "Unfiltered",
-            'data-href' => collection_path(params.slice(:scope, :direction, *(filter_param_names - [filter.param_name])))
+            'data-href' => collection_path(params.slice(:scope, :direction, :search, *(filter_param_names - [filter.param_name])))
         end
 
         filter.options_for_select.each do |content, value|
           option content, 
             value:value, 
             selected:value == params[filter.param_name],
-            'data-href' => collection_path(params.slice(:scope, :direction, *filter_param_names).merge(filter.param_name => value))
+            'data-href' => collection_path(params.slice(:scope, :direction, :search, *filter_param_names).merge(filter.param_name => value))
         end
       end
     end
@@ -85,7 +91,7 @@ class Views::Resources::Index < Views::Resources::Base
     return if search_fields.none?
     h3 "Search"
     form action:request.fullpath do
-      input type:'search', name:'search', value:params[:search]
+      input type:'search', name:'search', value:params[:search], placeholder: search_fields.map(&:to_s).map(&:titlecase).to_sentence
       params[:scope] and input type:'hidden', name:'scope', value:params[:scope]
       params[:sort] and input type:'hidden', name:'sort', value:params[:sort]
       params[:direction] and input type:'hidden', name:'direction', value:params[:direction]
@@ -100,24 +106,24 @@ class Views::Resources::Index < Views::Resources::Base
         scope_class = "scope"
         scope_class += " current" if scope.matches(params[:scope])
 
-        link_to collection_path(scope.path_options.reverse_merge(params.slice(:sort, :direction, *filter_param_names))), class: scope_class do
+        link_to collection_path(scope.path_options.reverse_merge(params.slice(:sort, :direction, :search, *filter_param_names))), class: scope_class do
           span scope.display_name#, class:"lead"
           text " "
-          span scope.count(collection.unscoped), class:"count"
+          span scope.count(controller.send(:end_of_association_chain)), class:"count"
         end
       end
     end
   end
 
   def sort_selector
-    h3 "Sort"
     return if sortings.none?
+    h3 "Sort"
     nav class:'sortings' do
       sortings.each_with_index do |sorting, index|
         sorting_class = "sorting"
         sorting_class += " current" if sorting.matches(params[:sort])
 
-        link_to collection_path(sorting.path_options.reverse_merge(params.slice(:scope, :direction, *filter_param_names))), class: sorting_class do
+        link_to collection_path(sorting.path_options.reverse_merge(params.slice(:scope, :direction, :search, *filter_param_names))), class: sorting_class do
           span sorting.display_name#, class:"lead"
         end
       end

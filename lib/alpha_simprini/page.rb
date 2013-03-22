@@ -1,3 +1,4 @@
+# coding: utf-8
 require "erector"
 module AlphaSimprini
   class Page < Erector::Widget
@@ -80,5 +81,10 @@ module AlphaSimprini
     def footer_content
       
     end
+
+    def check_mark value
+      span (value ? "✓" : "✗"), class: value ? 'yes' : 'no'
+    end
+
   end
 end

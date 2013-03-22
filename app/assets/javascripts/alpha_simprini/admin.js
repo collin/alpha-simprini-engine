@@ -1,4 +1,5 @@
 //= require rails
+//= require select2
 console.warn("Stolen latest nested_form js, should delete when gem updates");
 jQuery('.auto-filter').live('change', function() {
   window.location = jQuery(this).find(":selected").data('href');
@@ -7,9 +8,18 @@ jQuery('.auto-filter').live('change', function() {
 jQuery(function() {
   if (parent === window) return;
   parent.postMessage({
-    location: window.location.pathname
+    location: window.location.pathname,
+    query: window.location.search
   }, "*");
 });
+
+// jQuery("tr").on('mouseenter', function(event){
+//   var thead = $(this).closest('table').children('thead:first');
+//   var theadTop = thead.position().top;
+//   var top = $(this).offset().top;
+//   var diff =  top - $(this).closest('table').offset().top - thead.height();
+//   thead.css('-webkit-transform', 'translateY('+diff+'px)').css("background", "white");
+// });
 
 jQuery(function($) {
   window.NestedFormEvents = function() {

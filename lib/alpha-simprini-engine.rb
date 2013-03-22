@@ -11,8 +11,31 @@ module AlphaSimpriniEngine
   require "alpha_simprini/admin/scope"
   require "alpha_simprini/admin/sorting"
   require "alpha_simprini/admin/resource"
+  require "alpha_simprini/admin/scoped_resource"
   require "alpha_simprini/admin_view_resolver"
   require "alpha_simprini/template_handler"
+
+  # All scopes will know their own names.
+  class ::ActiveRecord::Base
+    def self.scope(name, options={}, &block)
+      super(name, options) do
+        class_eval(&block) if block_given?
+        define_method(:scope_name) { name }
+
+        def chained?
+          to_sql != klass.send(scope_name).to_sql
+        end
+      end
+    end
+  end
+
+  begin
+    require 'paperclip'
+    require 'alpha_simprini/inputs/paperclip_image_input'
+  rescue LoadError
+    # No paperclip? No paperclip inputs.
+  end
+
 
   if Rails.env.production?
     require_relative "./../app/views"

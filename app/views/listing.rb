@@ -4,16 +4,28 @@ module Views::Listing
   include Kaminari::ActionViewExtension
 
   included do
-    class_attribute :no_actions
+    class_attribute :actions
     class_attribute :admin
     class_attribute :iterator_method
     class_attribute :header_text
+    class_attribute :action_items
     self.iterator_method = :each
+    self.actions = [:view, :edit, :delete]
+    self.action_items = []
   end
 
   module ClassMethods
     def header(text)
       self.header_text = text
+    end
+
+    def create(value=nil)
+      @create = value unless value.nil?
+      if defined? @create
+        @create
+      else
+        nil
+      end
     end
 
     def content_fields
@@ -24,12 +36,28 @@ module Views::Listing
       content_fields.push [name, content]    
     end
 
-    def no_actions!
-      self.no_actions = true
+    def after_row(&block)
+      @after_row_block = block
     end
 
-    def action_item(name, action, &block)
-      self.action_items << [name, action]
+    def after_table(&block)
+      @after_table_block = block
+    end
+
+    def after_table_block
+      @after_table_block
+    end
+
+    def after_row_block
+      @after_row_block
+    end
+
+    def no_actions!
+      self.actions = []
+    end
+
+    def action_item(name, action, options={}, &block)
+      self.action_items << [name, action, options]
     end
 
     def iterator(method)
@@ -47,6 +75,17 @@ module Views::Listing
 
   def blank_slate
     text "Blank Slate" unless collection.any?
+  end
+
+  def create?
+    create = self.class.create
+    if create == true
+      true
+    elsif create == false
+      false
+    elsif create.nil?
+      not(no_actions)
+    end
   end
 
   # SAVEME: list based listing
@@ -67,19 +106,36 @@ module Views::Listing
   # end
 
   def table_listing
+    link_to_create      
     blank_slate
     if collection.any?
       table class: collection_class do
         table_header
         each_item &method(:row)
+        if after_table = self.class.after_table_block
+          instance_exec &after_table
+        end
       end
       pagination
     end    
   end
   alias listing table_listing
 
+  def link_to_create
+    return unless create?
+    link_to "Add #{resource_name.titlecase.indefinitize}", new_resource_path, class:'new'
+  end
+
   def each_item(&block)
     collection.send(iterator, &block)
+  end
+
+  def collection_name
+    if collection.is_a? Array
+      header_text || ""
+    else
+      collection.name
+    end
   end
 
   def iterator
@@ -96,26 +152,40 @@ module Views::Listing
   end
   
   def no_actions
-    self.class.no_actions
+    self.class.actions.empty?
+  end
+
+  def action?(action)
+    self.class.actions.include?(action.to_sym)
+  end
+
+  def delete?
+    action? :delete
+  end
+
+  def edit?
+    action?(:edit) && defined?(component.view_module::Edit)
+  end
+
+  def view?
+    action?(:view) && defined?(component.view_module::Show)
   end
 
   def links_for_item(item)
-    return if no_actions
+    return if no_actions && self.class.action_items.none?
     span do
       action_links(item)
     end
   end
 
-  def action_items
-    self.class.action_items
-  end
-
   def action_links(item)
-    link_to "View", resource_path(item)
-    link_to "Edit", edit_resource_path(item)
-    link_to "Delete", resource_path(item), method: 'delete', confirm: 'Are you sure you want to delete this?'
-    self.action_items.each do |(name, action, block)|
-      link_to name, send("#{action}_resource_path", item), method: 'post'
+    unless no_actions
+      view? and link_to "View", resource_path(item)
+      edit? and link_to "Edit", edit_resource_path(item)
+      delete? and link_to "Delete", resource_path(item), class:'destructive', method: 'delete', confirm: 'Are you sure you want to delete this?'
+    end
+    self.class.action_items.each do |(name, action, options, block)|
+      link_to name, send("#{action}_resource_path", item), {method: 'put'}.reverse_merge(options)
     end
   end
 
@@ -123,7 +193,7 @@ module Views::Listing
     if self.class.header_text
       [self.class.header_text.downcase.sub(' ', '-'), :records]
     else
-      [collection.name.pluralize.dasherize.downcase, :records]
+      [collection_name.pluralize.dasherize.downcase, :records]
     end
   end
 
@@ -146,7 +216,7 @@ module Views::Listing
           end
         end
 
-        th { "Actions" }
+        th "Action", class:'actions'
       end
     end
   end
@@ -158,12 +228,16 @@ module Views::Listing
           if block
             instance_exec item, &block
           else
-            text item.send(field).presence || "—"
+            text item.send(field).presence || check_mark(false)
           end
         end
       end  
 
-      td { links_for_item item }    
+      td(class:'actions') { links_for_item item }    
+    end
+
+    if after_row = self.class.after_row_block
+      instance_exec item, &after_row
     end
   end
 
@@ -173,7 +247,7 @@ module Views::Listing
         if block
           instance_exec item, &block
         else
-          text item.send(field).presence || "—"
+          text item.send(field).presence || check_mark(false)
         end        
       end
     end

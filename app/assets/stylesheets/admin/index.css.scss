@@ -1,3 +1,4 @@
+@import 'select2';
 @import 'compass/css3';
 @import 'bootstrap';
 
@@ -20,6 +21,27 @@ table.records {
     position: -webkit-sticky;
     top: 0px;
   }
+  .table-group-heading {
+    background-color: #eee;
+  }
+
+  [data-method] {
+    @extend .btn;
+    @extend .btn-mini;
+
+    &.destructive {
+      @extend .btn-danger;
+      float: right;
+    }
+
+    &.constructive {
+      @extend .btn-success;
+    }
+  }
+
+  .actions {
+    white-space: nowrap;
+  }
 }
 
 form {
@@ -28,12 +50,74 @@ form {
   .input {
     > * {
       @include inline-block;
+      vertical-align: top;
+
+      &.hint {
+        vertical-align: bottom;
+      }
     }
+  }
+  .input.boolean {
+    width: 300px;
+  }
+  label.checkbox {
+    width: 50px;
+    @include inline-block;
   }
 }
 
-[view=show] #content {
-  @extend .container;
+.yes, .no {
+  @include inline-block;
+  font-weight: bold;
+  padding-left: 1em
+}
+
+.yes {
+  color: green;
+}
+
+.no { 
+  color: red
+}
+
+.buttons {
+  margin: 2em auto;
+  a {
+    @extend .btn;
+    margin-right: 1em;
+  }
+}
+
+[view=show], [view=new], [view=edit] { 
+  #content {
+    @extend .container;
+    margin: 0 auto;
+  }
+}
+
+dl {
+  dt, dd {
+    @include inline-block;
+    line-height: 18px;
+    margin-bottom: 0.6em;
+    vertical-align: top;
+    em {
+      font-weight: normal;
+      font-size: 10px;
+      vertical-align: top;
+    }
+  }
+  dt {
+    @extend .lead;
+    @extend .span2;
+    font-weight: bold;
+    font-size: 14px;
+    clear: left;
+    text-align: right;
+  }
+  dd {
+    @extend .span4;
+  }
 }
 
 .filters {
@@ -49,6 +133,9 @@ form {
     margin-bottom: 0;
   }
   .form {
+    width: auto;
+  }
+  select {
     width: auto;
   }
 }
@@ -174,6 +261,10 @@ header {
   }
 }
 
+.has-many .create {
+  @extend .btn;
+}
+
 form { 
   @extend .container;
   margin: 0 auto;
@@ -205,6 +296,11 @@ form {
     @extend .btn-primary;
     float: right;
   }
+}
+
+.notice {
+  margin: 0;
+  padding-left: 1em;
 }
 
 .alert {
