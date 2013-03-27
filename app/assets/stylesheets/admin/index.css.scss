@@ -2,6 +2,8 @@
 @import 'compass/css3';
 @import 'bootstrap';
 
+$feather: lighten(#eee, 1);
+
 a.new {
   @extend .btn;
 }
@@ -117,16 +119,25 @@ dl {
   }
   dd {
     @extend .span4;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
   }
 }
 
+.container-fluid {
+  padding-left: 0;
+}
+
 .filters {
-  width: 200px;
+  width: 215px;
   float: left;
   text-align: right;
+  > * {
+    padding: 5px 10px;
+    margin-top: 1em;
+  }
   h3 {
     text-align: left;
-    margin-top: 1em;
   }
   [type=search] {
     width: 190px;
@@ -137,6 +148,10 @@ dl {
   }
   select {
     width: auto;
+  }
+  fieldset {
+    background-color: $feather;
+    padding-bottom: 10px;
   }
 }
 

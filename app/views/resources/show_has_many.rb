@@ -1,8 +1,10 @@
-class Views::Resources::ShowHasMany < Erector::Widget
+class Views::Resources::ShowHasMany < AlphaSimprini::Widget
   include Views::Listing
+  include AlphaSimprini::Admin::ActionItems
+  
   no_actions!
 
-  attr_accessor :collection, :relation_name
+  attr_accessor :collection, :relation_name, :resource
 
   def self.nested(value=nil)
     value.nil? or @nested = value
@@ -11,6 +13,13 @@ class Views::Resources::ShowHasMany < Erector::Widget
 
   class << self
     alias nested? nested
+  end
+
+  def blank_slate
+    return if collection.any?
+    p class:'lead' do
+      text "There are none."
+    end
   end
 
   def content
@@ -30,6 +39,14 @@ class Views::Resources::ShowHasMany < Erector::Widget
   end
 
   delegate :relation_form, to: 'self.class'
+
+  def _resource_path(item)
+    resource_path([resource, relation_name, item])
+  end
+
+  def _edit_resource_path(item)
+    edit_resource_path([resource, relation_name, item])
+  end
 
   def link_to_create
     return unless create?

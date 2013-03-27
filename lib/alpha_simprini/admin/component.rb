@@ -18,6 +18,9 @@ class AlphaSimprini::Admin::Component
 
     subclass.class_attribute :filters
     subclass.filters = []
+
+    subclass.class_attribute :date_filters
+    subclass.date_filters = []    
   end
 
   class << self

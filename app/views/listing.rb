@@ -8,10 +8,8 @@ module Views::Listing
     class_attribute :admin
     class_attribute :iterator_method
     class_attribute :header_text
-    class_attribute :action_items
     self.iterator_method = :each
     self.actions = [:view, :edit, :delete]
-    self.action_items = []
   end
 
   module ClassMethods
@@ -19,8 +17,9 @@ module Views::Listing
       self.header_text = text
     end
 
-    def create(value=nil)
+    def create(value=nil, &block)
       @create = value unless value.nil?
+      @create = block if block_given?
       if defined? @create
         @create
       else
@@ -32,8 +31,8 @@ module Views::Listing
       @content_fields ||= []
     end
 
-    def field(name, &content)
-      content_fields.push [name, content]    
+    def field(name, options={}, &content)
+      content_fields.push [name, options, content]
     end
 
     def after_row(&block)
@@ -54,10 +53,6 @@ module Views::Listing
 
     def no_actions!
       self.actions = []
-    end
-
-    def action_item(name, action, options={}, &block)
-      self.action_items << [name, action, options]
     end
 
     def iterator(method)
@@ -83,6 +78,8 @@ module Views::Listing
       true
     elsif create == false
       false
+    elsif create.respond_to?(:call)
+      instance_eval &create
     elsif create.nil?
       not(no_actions)
     end
@@ -110,6 +107,11 @@ module Views::Listing
     blank_slate
     if collection.any?
       table class: collection_class do
+        if respond_to?(:any_filters?) and any_filters?
+          p class:'lead' do
+            text "found #{pluralize(collection.limit(nil).count, resource_name.titlecase)} that match your filters:"
+          end
+        end
         table_header
         each_item &method(:row)
         if after_table = self.class.after_table_block
@@ -178,14 +180,30 @@ module Views::Listing
     end
   end
 
+  def _resource_path(item)
+    resource_path(item)
+  end
+
+  def _edit_resource_path(item)
+    edit_resource_path(item)
+  end
+
   def action_links(item)
     unless no_actions
-      view? and link_to "View", resource_path(item)
-      edit? and link_to "Edit", edit_resource_path(item)
-      delete? and link_to "Delete", resource_path(item), class:'destructive', method: 'delete', confirm: 'Are you sure you want to delete this?'
+      view? and link_to "View", _resource_path(item)
+      edit? and link_to "Edit", _edit_resource_path(item)
+      delete? and link_to "Delete", _resource_path(item), class:'destructive', method: 'delete', confirm: 'Are you sure you want to delete this?'
     end
     self.class.action_items.each do |(name, action, options, block)|
-      link_to name, send("#{action}_resource_path", item), {method: 'put'}.reverse_merge(options)
+      if !(action || block)
+        raise "Action Links MUST specify either an action or a block."
+      end
+
+      if action
+        link_to name, url, {method: 'put'}.reverse_merge(options)
+      else
+        instance_exec item, &block        
+      end
     end
   end
 
@@ -209,8 +227,19 @@ module Views::Listing
 
   def table_header
     thead do
+      # tr do
+      #   th "Total"
+      #   content_fields.each_with_index do |(field, block), index|
+      #     next if index.zero?
+      #     if field.sum?
+      #       th number_to_currency(field.sum_value)
+      #     else
+      #       th
+      #     end
+      #   end
+      # end
       tr do
-        content_fields.each do |(field, block)|
+        content_fields.each_with_index do |(field, options, block), index|
           th do
             text field.to_s.titlecase
           end
@@ -223,7 +252,7 @@ module Views::Listing
 
   def row(item)
     tr do
-      content_fields.each do |(field, block)|
+      content_fields.each do |(field, options, block)|
         td do
           if block
             instance_exec item, &block

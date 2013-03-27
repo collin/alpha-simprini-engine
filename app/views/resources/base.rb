@@ -10,9 +10,29 @@ class Views::Resources::Base < AlphaSimprini::Page
       controller:self.controller.class.name.demodulize.underscore.gsub('_controller', '')
   end
 
+  def back_link_path
+    if respond_to?(:parent?) && parent? && params["id"]
+      collection_path
+    elsif respond_to?(:parent?) && parent?
+      parent_path
+    else
+      collection_path
+    end
+  end
+
+  def back_link_text
+    if respond_to?(:parent?) && parent? && params["id"]
+      [controller.send(:parent).display_name, "'s ", resource_name.pluralize.titlecase].join
+    elsif respond_to?(:parent?) && parent?
+      controller.send(:parent).display_name
+    else
+      resource_name.pluralize.titlecase
+    end
+  end
+
   def back_link
     p do
-      link_to "⇤ back to #{resource_name.pluralize.titlecase} index", collection_path      
+      link_to "⇤ back to #{back_link_text} index", back_link_path      
     end
   end
 

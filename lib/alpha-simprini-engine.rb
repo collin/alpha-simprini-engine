@@ -1,19 +1,31 @@
 module AlphaSimpriniEngine
+  module ::AlphaSimprini; end
+
   require "rails/all"
   require "inherited_resources"
   require "kaminari"
+  require "alpha_simprini/widget"
   require "alpha_simprini/page"
   require "alpha_simprini/admin"
   require "alpha_simprini/admin/path_helpers"
   require "alpha_simprini/admin/page"
+  require "alpha_simprini/admin/action_items"
   require "alpha_simprini/admin/component"
   require "alpha_simprini/admin/filter"
+  require "alpha_simprini/admin/date_filter"
   require "alpha_simprini/admin/scope"
   require "alpha_simprini/admin/sorting"
   require "alpha_simprini/admin/resource"
   require "alpha_simprini/admin/scoped_resource"
   require "alpha_simprini/admin_view_resolver"
   require "alpha_simprini/template_handler"
+
+  begin
+    require 'paperclip'
+    require 'alpha_simprini/inputs/paperclip_image_input'
+  rescue LoadError
+    # No paperclip? No paperclip inputs.
+  end
 
   # All scopes will know their own names.
   class ::ActiveRecord::Base
@@ -29,27 +41,6 @@ module AlphaSimpriniEngine
     end
   end
 
-  begin
-    require 'paperclip'
-    require 'alpha_simprini/inputs/paperclip_image_input'
-  rescue LoadError
-    # No paperclip? No paperclip inputs.
-  end
-
-
-  if Rails.env.production?
-    require_relative "./../app/views"
-    require_relative "./../app/views/listing"
-    require_relative "./../app/views/resources"
-    require_relative "./../app/views/resources/base"
-    require_relative "./../app/views/resources/form"
-    require_relative "./../app/views/resources/edit"
-    require_relative "./../app/views/resources/index"
-    require_relative "./../app/views/resources/new"
-    require_relative "./../app/views/resources/show"
-    require_relative "./../app/views/resources/show_has_many"
-  end
-  
   class Engine < Rails::Engine
     config.autoload_paths += %w(#{config.root}/app)
 

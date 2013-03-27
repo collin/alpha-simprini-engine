@@ -13,6 +13,13 @@ jQuery(function() {
   }, "*");
 });
 
+
+jQuery(function ($) {
+  $(".filters form .reset").on("click", function() {
+    $(this).closest('form').find('select').val('')
+  });  
+});
+
 // jQuery("tr").on('mouseenter', function(event){
 //   var thead = $(this).closest('table').children('thead:first');
 //   var theadTop = thead.position().top;

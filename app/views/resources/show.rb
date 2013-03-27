@@ -43,6 +43,6 @@ class Views::Resources::Show < Views::Resources::Base
 
   def display_relation(name)
     relation = self.class.has_manys[name]
-    widget relation.new(collection: resource.send(name), relation_name:name)
+    widget relation.new(collection: resource.send(name), resource:resource, relation_name:name)
   end
 end

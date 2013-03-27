@@ -1,4 +1,4 @@
-class Views::Resources::ShowField < Erector::Widget
+class Views::Resources::ShowField < AlphaSimprini::Widget
   def content
     dt @name.to_s.titleize + ":"
     if @renderer

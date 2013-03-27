@@ -1,10 +1,7 @@
  # coding: utf-8
 class Views::Resources::Index < Views::Resources::Base
   include Views::Listing
-
-  def self.action_items
-    @action_items ||= []
-  end
+  include AlphaSimprini::Admin::ActionItems
   
   def page_header
     h3 "#{resource_name} Index"
@@ -30,14 +27,14 @@ class Views::Resources::Index < Views::Resources::Base
     h3 do
       text "Try changing your scope and search options."
     end
-    # link_to "Create a #{resource_name}", new_resource_path, class: 'new' if create?
   end
   
   def body_content
     # page_header
     section class:'container-fluid' do    
       display_filters
-      section class:listing_class do    
+      section class:listing_class do
+        back_link
         listing
       end
     end
@@ -47,24 +44,51 @@ class Views::Resources::Index < Views::Resources::Base
     [:listing, any_filters? ? :filtered : :unfiltered]
   end
 
-  delegate :scopes, :sortings, :search_fields, :filters, to: 'component'
+  delegate :scopes, :sortings, :search_fields, :filters, :date_filters, 
+    to: 'component'
 
   def display_filters
     return unless any_filters?
     section class:'filters' do    
-      search
-      scope_selector
-      sort_selector
-      filter_selector
+      section { search }
+      section { scope_selector }
+      section { sort_selector }
+      section { filter_selector }
+      date_filter_selector
     end
   end
 
   def any_filters?
-    filters.any? || search_fields.any? || scopes.any? || scopes.any?
+    [scopes, sortings, search_fields, filters, date_filters].flatten.any?
   end
 
   def filter_param_names
-    filters.map(&:param_name)
+    (filters + date_filters).map(&:param_name)
+  end
+
+  def date_filter_selector
+    return if date_filters.none?
+    date_filters.each do |filter|
+      fieldset do     
+        form_for filter.active_model(params[filter.param_name]), as: filter.param_name, method: 'get', url:request.path do |f|
+          h3 "#{filter.display_name} Between"
+
+          params.slice(:scope, :sort, :direction, :search, *(filter_param_names - [filter.param_name])).each do |key, value|
+            next if key =~ /^date_filter_/
+            text raw hidden_field_tag(key, value)
+          end
+
+          section do
+            f.date_select :from, order: [:month, :year], include_blank: true            
+          end
+          section do          
+            f.date_select :until, order: [:month, :year], include_blank: true
+          end
+          button "Clear", class:"btn reset"
+          f.submit "Filter Date", class:"btn btn-primary"
+        end
+      end
+    end
   end
 
   def filter_selector

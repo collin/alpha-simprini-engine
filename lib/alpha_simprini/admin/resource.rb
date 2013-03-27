@@ -32,6 +32,17 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
         inherit_resources
         include AlphaSimprini::Admin::PathHelpers
 
+        before_filter :wipe_blank_date_filters
+
+        def wipe_blank_date_filters
+          params.keys.grep(/^date_filter_/).each do |date_filter_key|
+            param = params[date_filter_key]
+            value_keys = param.keys.grep(/from\((1|2)i\)/)
+            values = value_keys.map{|key| param[key] }.reject(&:blank?)
+            params.delete(date_filter_key) if values.length != 2
+          end
+        end
+
         def resource_path(_resource=resource, options={})
           polymorphic_path _resource, options
         end
@@ -52,7 +63,8 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
           end
         end
         helper_method :resource_path, :new_resource_path, :edit_resource_path, :collection_path
-
+        helper_method :parent
+        
         def create
           create! { collection_path }
         end
@@ -68,12 +80,13 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
       
         def collection
           get_collection_ivar || begin
-            chain = end_of_association_chain
-            searched = apply_search(chain)
-            paged = apply_pagination(searched)
-            sorted = apply_sorting(paged)
-            filtered = apply_filters(sorted)
-            scoped = apply_scoping(filtered)
+            scoped = apply_scoping\
+              apply_date_filters\
+              apply_filters\
+              apply_sorting\
+              apply_pagination\
+              apply_search\
+              end_of_association_chain
             set_collection_ivar(scoped.respond_to?(:scoped) ? scoped.scoped : scoped.all)
           end
         end
@@ -100,7 +113,14 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
 
         def apply_filters(query)
           filters = self.class.component.get_filters params.keys.grep(/^filter_/)
-          return query if filters.none?
+          filters.each do |filter|
+            query = filter.apply_to(query, params[filter.param_name])
+          end
+          query
+        end
+
+        def apply_date_filters(query)
+          filters = self.class.component.get_date_filters params.keys.grep(/^date_filter_/)
           filters.each do |filter|
             query = filter.apply_to(query, params[filter.param_name])
           end
@@ -164,12 +184,21 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
     self.scopes << AlphaSimprini::Admin::Scope.new(self, scope_name, display_name, options)
   end
 
+  def self.date_filter(column_name, display_name=nil, options={})
+    display_name ||= column_name.to_s.titlecase
+    self.date_filters << AlphaSimprini::Admin::DateFilter.new(self, column_name, display_name, options)
+  end
+
   def self.get_scope(scope_name)
     scopes.detect{|scope| scope.matches scope_name }
   end
 
   def self.get_filters(filter_keys)
     filters.find_all{|filter| filter_keys.include? filter.param_name.to_s }
+  end
+
+  def self.get_date_filters(filter_keys)
+    date_filters.find_all{|filter| filter_keys.include? filter.param_name.to_s }
   end
 
   def self.get_sorting(sorting_name)
