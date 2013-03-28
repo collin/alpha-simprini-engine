@@ -1,5 +1,9 @@
 # coding: utf-8
 class Views::Resources::Show < Views::Resources::Base
+  def title_text
+    "Showing #{resource_class.name}: #{resource.try(:display_name) rescue ''}"  
+  end
+
   def self.field(name, &renderer)
     fields[name] = [Class.new(Views::Resources::ShowField), renderer]
   end

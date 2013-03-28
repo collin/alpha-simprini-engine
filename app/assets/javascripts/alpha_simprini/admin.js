@@ -1,5 +1,6 @@
 //= require rails
 //= require select2
+//= require alpha_simprini/stacker
 console.warn("Stolen latest nested_form js, should delete when gem updates");
 jQuery('.auto-filter').live('change', function() {
   window.location = jQuery(this).find(":selected").data('href');

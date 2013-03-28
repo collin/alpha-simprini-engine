@@ -31,9 +31,9 @@ class Views::Resources::Base < AlphaSimprini::Page
   end
 
   def back_link
-    p do
-      link_to "⇤ back to #{back_link_text} index", back_link_path      
-    end
+    # p do
+    #   link_to "⇤ back to #{back_link_text} index", back_link_path      
+    # end
   end
 
   def form_for(resource, options={}, &block)

@@ -4,7 +4,7 @@ class Views::Resources::Index < Views::Resources::Base
   include AlphaSimprini::Admin::ActionItems
   
   def page_header
-    h3 "#{resource_name} Index"
+    h3 title_text
   end
   
   def blank_slate
@@ -38,6 +38,10 @@ class Views::Resources::Index < Views::Resources::Base
         listing
       end
     end
+  end
+
+  def title_text
+    "#{resource_name} Index"
   end
 
   def listing_class

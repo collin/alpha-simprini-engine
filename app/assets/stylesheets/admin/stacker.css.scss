@@ -1,0 +1,25 @@
+.stack-item-container {
+  position: relative;
+
+  .stack-item-title {
+     @extend .lead;
+  }
+
+  .stack-item {
+    @include border-radius(10px);
+    position: absolute;
+    border: 5px solid lighten(blue, 30);
+    padding: 10px;
+    padding-top: 0;
+    background: white;
+    list-style: none;
+    right: 0px;
+  }
+  .stack-item-under {
+    width: 960px;
+    background: #eee;
+  }
+  .stack-item-top {
+
+  }
+}

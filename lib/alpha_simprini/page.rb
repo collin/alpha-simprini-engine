@@ -21,7 +21,7 @@ module AlphaSimprini
       html(html_attrs) do
         head do
           csrf_meta_tag
-          title :application_title
+          title title_text
           assets
         end
         body do
@@ -44,6 +44,10 @@ module AlphaSimprini
       end
     end
   
+    def title_text
+      t :application_title
+    end
+
     def html_attrs
       {}
     end
