@@ -1,4 +1,4 @@
-//= require rails
+//= require jquery_ujs
 //= require select2
 //= require alpha_simprini/stacker
 console.warn("Stolen latest nested_form js, should delete when gem updates");

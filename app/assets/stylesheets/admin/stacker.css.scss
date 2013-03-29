@@ -8,7 +8,7 @@
   .stack-item {
     @include border-radius(10px);
     position: absolute;
-    border: 5px solid lighten(blue, 30);
+    border: 2px solid rgba(99, 99, 127, 0.55);
     padding: 10px;
     padding-top: 0;
     background: white;
@@ -20,6 +20,6 @@
     background: #eee;
   }
   .stack-item-top {
-
+    @include box-shadow(0 0 3px 1px rgb(207, 207, 207));
   }
 }

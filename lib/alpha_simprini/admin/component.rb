@@ -76,7 +76,7 @@ class AlphaSimprini::Admin::Component
 
     _singular_model_name = singular_model_name
     child_resource.controller do
-      belongs_to _singular_model_name
+      optional_belongs_to _singular_model_name
     end
 
     engine.append_routes do

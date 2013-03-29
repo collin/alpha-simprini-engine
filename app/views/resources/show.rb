@@ -31,7 +31,7 @@ class Views::Resources::Show < Views::Resources::Base
     dl do
       self.class.fields.each do |name, (field, renderer)|
         widget field.new(name: name, renderer:renderer, resource:resource)
-      end      
+      end
     end
   end  
 

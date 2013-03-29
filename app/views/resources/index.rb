@@ -41,7 +41,7 @@ class Views::Resources::Index < Views::Resources::Base
   end
 
   def title_text
-    "#{resource_name} Index"
+    header_text or "#{component.model_name} Index"
   end
 
   def listing_class

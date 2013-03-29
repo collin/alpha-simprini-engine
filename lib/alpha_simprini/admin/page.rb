@@ -28,6 +28,7 @@ module AlphaSimprini::Admin::Page
         end
         attrs = {}
         attrs[:class] = 'current' if request.path.starts_with?(url)
+        attrs[:stacker] = :reset
         link_to subclass.tab_text, url, attrs
       end
     end    
