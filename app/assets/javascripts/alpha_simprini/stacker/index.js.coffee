@@ -188,9 +188,18 @@ class Stacker.NetworkController
         title: doc.find("title").text()
         htmlAttrs: htmlAttrs
 
-
 class Stacker.App
-  # constructor: ->
+  constructor: (@root, @history=window.history) ->
+    @networkController = new Stacker.NetworkController
+    @historyStack = new Stacker.Cards
+    @historyController = new Stacker.HistoryController(
+      @historyStack, @history
+    )
+    @navigationController = new Stacker.NavigationController(
+      @root, @networkController, @historyStack, @historyController
+    )
+    @stackView = new Stacker.StackView el:@root, model:@historyStack
+
   #   content = $("#content")
   #   content.after stackContainer = $("<section id='content'></section>")
 
