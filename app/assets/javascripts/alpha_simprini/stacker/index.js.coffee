@@ -109,6 +109,10 @@ class Stacker.HistoryController
     @stack.on 'add', => @clearForwardStack()
     @stack.on 'add', (item) => @pushState(item)
 
+  currentCard: -> @stack.last()
+
+  currentStack: -> @currentCard().get('stack')
+
   popstate: ({state}) ->
     return false unless state?.cid? or state?.start is true
 
@@ -143,6 +147,7 @@ class Stacker.NavigationController
   link: (event) =>
     link = event.target
     # @history.reset() if $(link).is('[stacker=reset]')
+    @history.currentStack
     @stack.add link:link.href
     event.preventDefault()
 
