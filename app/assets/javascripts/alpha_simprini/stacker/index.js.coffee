@@ -11,6 +11,10 @@ class Stacker.Card extends Backbone.Model
 class Stacker.Cards extends Backbone.Collection
   model: Stacker.Card
 
+  constructor: ->
+    super
+    @cid = _.uniqueId('c')
+
 class Stacker.View extends Backbone.View
   find: (args...) -> @$el.find(args...)
 
@@ -111,7 +115,7 @@ class Stacker.HistoryController
 
   currentCard: -> @stack.last()
 
-  currentStack: -> @currentCard().get('stack')
+  currentStack: -> @currentCard()?.get('stack')
 
   popstate: ({state}) ->
     return false unless state?.cid? or state?.start is true
@@ -146,13 +150,39 @@ class Stacker.NavigationController
 
   link: (event) =>
     link = event.target
-    # @history.reset() if $(link).is('[stacker=reset]')
-    @history.currentStack
-    @stack.add link:link.href
+    stack = @history.currentStack() || new Stacker.Cards
+    stack = new Stacker.Cards if $(link).is('[stacker=reset]')
+    card = new Stacker.Card link:link.href, stack:stack
+    @stack.add card
     event.preventDefault()
+    @network.fetchCardData(card)
 
 class Stacker.NetworkController
-  constructor: ->
+  fetchCardData: (card) ->
+    request = @get url: card.get('link')
+    request.then _.bind(@setCardData, this, card)
+
+  get: (config) ->
+    $.get(config)
+
+  setCardData: (card, html) ->
+      _doc = document.createElement('html')
+      _doc.innerHTML = html
+      doc = $ _doc
+      htmlAttrs = {}
+      htmlTag = html.match(/<html(.+?)>/)
+      pairs = htmlTag[1].match(/\w+="\w+"|\w+='\w+'/g)
+
+      for pair in pairs
+        [X, key, value] = pair.match(/(\w+)=(?:"|')(\w+)(:?"|')/)
+        htmlAttrs[key] = value
+
+      card.set
+        header: doc.find("header:first")
+        content: doc.find("#content")
+        title: doc.find("title").text()
+        htmlAttrs: htmlAttrs
+
 
 class Stacker.App
   # constructor: ->
