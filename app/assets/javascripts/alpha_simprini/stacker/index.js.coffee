@@ -70,9 +70,14 @@ class Stacker.StackView extends Stacker.View
       @model.remove(_item)
 
   render: =>
+    stack = if last = @model.last()
+      last.get('stack')
+
+    stack ||= new Stacker.Cards
+
     @$el.empty()
     @tag 'ol', class:'stack-item-container', ->
-      for card, index in @model.slice(0, @model.length - 1)
+      for card, index in stack.slice(0, stack.indexOf( last ))
         item = @tag 'li', class:'stack-item stack-item-under', 'data-stack-item-cid':card.cid, ->
           @tag 'label', class:'stack-item-title', ->
             @text card.get('title')
@@ -82,20 +87,20 @@ class Stacker.StackView extends Stacker.View
           left: (index*@distance)/2
 
       title = null
-      if top = @model.last()
-        item = $ @tag 'li', class:'stack-item stack-item-top', ->
+      if last
+        item = $ @tag 'li', class:'stack-item stack-item-top', 'data-stack-item-cid':last.cid, ->
           title = $ @tag 'label', class:'stack-item-title', ->
-            @text top.get('link')
+            @text last.get('link')
 
-        @replaceHeader top.get('header')
+        @replaceHeader last.get('header')
 
         item.css
-          top: (@model.length - 1) * @distance
-          left: ((@model.length - 1) * @distance)/2
+          top: (stack.length - 1) * @distance
+          left: ((stack.length - 1) * @distance)/2
 
-        item.append content if content = top.get('content')
-        title.text titleText if titleText = top.get('title')
-        $('html').attr(htmlAttrs) if htmlAttrs = top.get('htmlAttrs')
+        item.append content if content = last.get('content')
+        title.text titleText if titleText = last.get('title')
+        $('html').attr(htmlAttrs) if htmlAttrs = last.get('htmlAttrs')
 
 
         @find(".stack-item-under").css height: item.height()

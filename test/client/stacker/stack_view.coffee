@@ -32,9 +32,9 @@ test "has no stack items underneath top item", ->
 
 module "Stacker.CardsView#render with multiple items", setup: ->
   stack = new Stacker.Cards
-  stack.add link:"Item1", title:"Item1"
-  stack.add link:"Item1.2"
-  stack.add link:"Item2"
+  stack.add link:"Item1", title:"Item1", stack:stack
+  stack.add link:"Item1.2", stack:stack
+  stack.add link:"Item2", stack:stack
   @view = makeStackView(stack)
 
 test "renders items underneath top item", ->
@@ -75,6 +75,39 @@ test "renders top item at index-appropriate css position", ->
   topItem = @view.find('.stack-item-top')
   equal topItem.css('top'), '60px'
   equal topItem.css('left'), '30px'
+
+module "Stacker.CardsView#render with multiple stacks in history", setup: ->
+  @stack1 = new Stacker.Cards
+  @item_11 = (@stack1.add link:"Item 1.1", stack:@stack1).last()
+  @item_12 = (@stack1.add link:"Item 1.2", stack:@stack1).last()
+  @item_13 = (@stack1.add link:"Item 1.3", stack:@stack1).last()
+
+  @stack2 = new Stacker.Cards
+  @item_21 = (@stack2.add link:"Item 2.1", stack:@stack2).last()
+  @item_22 = (@stack2.add link:"Item 2.2", stack:@stack2).last()
+  @item_23 = (@stack2.add link:"Item 2.3", stack:@stack2).last()
+
+  @historyStack = new Stacker.Cards
+  @historyStack.add @item_12
+  @historyStack.add @item_23
+
+  @view = makeStackView(@historyStack)
+
+test "renders with the stack of the topItem, not the entire stack", ->
+  domCids = for el in @view.find('.stack-item')
+    $(el).data('stack-item-cid')
+
+  equal domCids.length, 3
+  deepEqual domCids, (item.cid for item in @stack2.models)
+
+test "renders partial stack of topItem if it is not the top item in the stack", ->
+  @historyStack.pop()
+  domCids = for el in @view.find('.stack-item')
+    $(el).data('stack-item-cid')
+
+  equal domCids.length, 2
+  deepEqual domCids, (item.cid for item in @stack1.models.slice(0, 2))
+
 
 module "Stacker.CardsView#replaceHeader", setup: ->
   @view = makeStackView()
@@ -119,9 +152,9 @@ test "pops the stack", ->
 
 module "Stacker.CardsView#jumpStack", setup: ->
   stack = new Stacker.Cards
-  stack.add @item1 = new Stacker.Card link:"Item1"
-  stack.add new Stacker.Card link:"Item2"
-  stack.add new Stacker.Card link:"Item3"
+  stack.add @item1 = new Stacker.Card link:"Item1", stack:stack
+  stack.add new Stacker.Card link:"Item2", stack:stack
+  stack.add new Stacker.Card link:"Item3", stack:stack
   @view = makeStackView(stack)
 
 test "jumps down to the targeted element", ->
