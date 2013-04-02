@@ -44,9 +44,23 @@ class TestApp < Rack::WebSocket::Application
   end
 
   def on_modification(modified, added, removed)
+    logger.info "modified: #{modified}"
     send_data JSON.dump(name: 'restart')
   end
 end
+
+class NeverCache
+  def initialize(app); @app = app end
+
+  def call(env)
+    status, headers, body = @app.call(env)
+    headers.delete("Last-Modified")
+    headers["Cache-Control"] = 'no-cache'
+    [status, headers, body]
+  end
+end
+
+use NeverCache
 
 map '/control' do
   run TestApp.new

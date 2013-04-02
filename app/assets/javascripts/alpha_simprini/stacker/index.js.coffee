@@ -11,14 +11,6 @@ class Stacker.Card extends Backbone.Model
 class Stacker.Cards extends Backbone.Collection
   model: Stacker.Card
 
-class Stacker.Stack extends Backbone.Model
-  constructor: ->
-    super
-    @set {back: new Stacker.Cards, forward: new Stacker.Cards}, silent:true
-
-class Stacker.Stacks extends Backbone.Collection
-  model: Stacker.Stack
-
 class Stacker.View extends Backbone.View
   find: (args...) -> @$el.find(args...)
 
@@ -110,13 +102,12 @@ class Stacker.StackView extends Stacker.View
 class Stacker.HistoryController
   @START: {start:true}
   START: @START
-  constructor: (@history) ->
-    @stacks = new Stacker.Stacks
+  constructor: (@stack, @history) ->
     @history.replaceState @START, null, location.href
-    # @forwardStack = new Stacker.StackCollection
+    @forwardStack = new Stacker.Cards
 
-    # @stack.on 'add', => @clearForwardStack()
-    # @stack.on 'add', (item) => @pushState(item)
+    @stack.on 'add', => @clearForwardStack()
+    @stack.on 'add', (item) => @pushState(item)
 
   popstate: ({state}) ->
     return false unless state?.cid? or state?.start is true
@@ -151,7 +142,7 @@ class Stacker.NavigationController
 
   link: (event) =>
     link = event.target
-    @history.reset() if $(link).is('[stacker=reset]')
+    # @history.reset() if $(link).is('[stacker=reset]')
     @stack.add link:link.href
     event.preventDefault()
 
@@ -163,9 +154,9 @@ class Stacker.App
   #   content = $("#content")
   #   content.after stackContainer = $("<section id='content'></section>")
 
-  #   @stack = new Stacker.Stack
-  #   @forwardStack = new Stacker.Stack
-  #   @stackView = new Stacker.StackView model:@stack, el:stackContainer
+  #   @stack = new Stacker.Cards
+  #   @forwardStack = new Stacker.Cards
+  #   @stackView = new Stacker.CardsView model:@stack, el:stackContainer
 
   #   $(document).delegate "a", "click", (event) =>
   #     console.log "Stacker intercepted a click", event.target, event

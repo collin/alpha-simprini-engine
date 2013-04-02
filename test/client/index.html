@@ -30,14 +30,13 @@
       replaceState: (@state, title, url) ->
 
     helper = (name, fn) -> window[name] = fn
-    helper 'makeStackView', (stack=(new Stacker.Stack)) ->
-      view = new Stacker.StackView model:stack.get('back'), header: $("<header>")
+    helper 'makeStackView', (stack=(new Stacker.Cards)) ->
+      view = new Stacker.StackView model:stack, header: $("<header>")
       view.render()
 
     helper 'makeHistoryController', ->
       view = makeStackView()
-      controller = new Stacker.HistoryController(new MockHistory)
-      controller.addStack view.model
+      controller = new Stacker.HistoryController(view.model, new MockHistory)
 
     helper 'matchModels', (list1, list2) ->
       deepEqual _.invoke(list1, 'toString'), _.invoke(list2, 'toString')

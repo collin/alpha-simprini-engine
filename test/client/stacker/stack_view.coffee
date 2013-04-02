@@ -1,9 +1,9 @@
-module "Stacker.StackView"
+module "Stacker.CardsView"
 test "adds container classes to container", ->
   view = makeStackView()
   ok view.$el.attr('class') is "stack-item-container container"
 
-module "Stacker.StackView#render", setup: -> 
+module "Stacker.CardsView#render", setup: -> 
   @view = makeStackView()
 
 test "has a list of stack items", ->
@@ -16,9 +16,9 @@ test "clears old list when re-rendering", ->
 test "has no stackItems", ->
   ok not @view.find('.stack-item').is("li")
 
-module "Stacker.StackView#render with one item", setup: ->
-  stack = new Stacker.Stack
-  stack.get('back').add {link:"HREF"}
+module "Stacker.CardsView#render with one item", setup: ->
+  stack = new Stacker.Cards
+  stack.add {link:"HREF"}
   @view = makeStackView(stack)
 
 test "renders a top stackItem", ->
@@ -30,11 +30,11 @@ test "renders a top stackItem", ->
 test "has no stack items underneath top item", ->
   ok not @view.find('.stack-item-under').is("li")
 
-module "Stacker.StackView#render with multiple items", setup: ->
-  stack = new Stacker.Stack
-  stack.get('back').add link:"Item1", title:"Item1"
-  stack.get('back').add link:"Item1.2"
-  stack.get('back').add link:"Item2"
+module "Stacker.CardsView#render with multiple items", setup: ->
+  stack = new Stacker.Cards
+  stack.add link:"Item1", title:"Item1"
+  stack.add link:"Item1.2"
+  stack.add link:"Item2"
   @view = makeStackView(stack)
 
 test "renders items underneath top item", ->
@@ -76,7 +76,7 @@ test "renders top item at index-appropriate css position", ->
   equal topItem.css('top'), '60px'
   equal topItem.css('left'), '30px'
 
-module "Stacker.StackView#replaceHeader", setup: ->
+module "Stacker.CardsView#replaceHeader", setup: ->
   @view = makeStackView()
 
 test "replaces header element", ->
@@ -88,7 +88,7 @@ test "doesn't replace header element if it is the same element", ->
   replacement = @view.options.header
   equal @view.replaceHeader(replacement), false
 
-module "Stacker.StackView#render with content attributes", setup: ->
+module "Stacker.CardsView#render with content attributes", setup: ->
   @view = makeStackView()
   @view.model.add
     content: @content = $("<section>")
@@ -109,19 +109,19 @@ test "'title' changes the stack item title", ->
 test "'htmlAttrs' sets attrubutes on the <html> element", ->
   equal $("html").data('testattr'), "HTML"
 
-module "Stacker.StackView#popStack", setup: ->
-  stack = new Stacker.Stack
-  stack.get('back').add @item1 = new Stacker.Card link:"Item1"
+module "Stacker.CardsView#popStack", setup: ->
+  stack = new Stacker.Cards
+  stack.add @item1 = new Stacker.Card link:"Item1"
   @view = makeStackView(stack)
 
 test "pops the stack", ->
   equal @view.popStack().cid, @item1.cid
 
-module "Stacker.StackView#jumpStack", setup: ->
-  stack = new Stacker.Stack
-  stack.get('back').add @item1 = new Stacker.Card link:"Item1"
-  stack.get('back').add new Stacker.Card link:"Item2"
-  stack.get('back').add new Stacker.Card link:"Item3"
+module "Stacker.CardsView#jumpStack", setup: ->
+  stack = new Stacker.Cards
+  stack.add @item1 = new Stacker.Card link:"Item1"
+  stack.add new Stacker.Card link:"Item2"
+  stack.add new Stacker.Card link:"Item3"
   @view = makeStackView(stack)
 
 test "jumps down to the targeted element", ->
@@ -129,7 +129,7 @@ test "jumps down to the targeted element", ->
   equal @view.model.length, 1
   deepEqual @view.model.models, [@item1]
 
-module "Stacker.StackView listeners", setup: ->
+module "Stacker.CardsView listeners", setup: ->
   @view = makeStackView()
   @view.render = -> ok true
 
