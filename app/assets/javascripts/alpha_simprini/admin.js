@@ -1,8 +1,21 @@
 //= require jquery_ujs
 //= require select2
 //= require alpha_simprini/stacker
+
+jQuery( function() {
+  window.stacker = new Stacker.App(
+    $(document), 
+    {
+      header:$('header:first'),
+      container:$('#content'),
+      history: history,
+      storage: sessionStorage
+    }
+  );
+});
+
 console.warn("Stolen latest nested_form js, should delete when gem updates");
-jQuery('.auto-filter').live('change', function() {
+jQuery('.auto-filter').on('change', function() {
   window.location = jQuery(this).find(":selected").data('href');
 });
 
