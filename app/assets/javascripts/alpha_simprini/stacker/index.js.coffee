@@ -3,6 +3,11 @@
 window.Stacker = {}
 
 class Stacker.Card extends Backbone.Model
+
+  constructor: ->
+    super
+    @get('id') or @set(id: _.uniqueId('id-') )
+
   _validate: -> true
 
   @fromJSON: (data) ->
@@ -11,7 +16,7 @@ class Stacker.Card extends Backbone.Model
     card
 
   toJSON: ->
-    _.pick @attributes, 'html', 'link'
+    _.pick @attributes, 'html', 'link', 'id'
 
   toString: ->
     "<Stacker.Card #{@cid} #{@get 'title'}>"
@@ -173,14 +178,14 @@ class Stacker.HistoryController
 
   popstate: ({state}) ->
     console.log "POPSTATE", state
-    return false unless state?.cid? or state?.start is true
+    return false unless state?.id? or state?.start is true
 
-    if state.cid and item = @stack.get(state)
+    if state.id and item = @stack.get(state)
       list = @stack.slice @stack.indexOf(item) + 1, @stack.length
       @stack.remove(item, silent:true) for item in list
       @forwardStack.add(item, at:0) for item in list.reverse()
 
-    else if state.cid and item = @forwardStack.get(state)
+    else if state.id and item = @forwardStack.get(state)
       list = @forwardStack.slice 0, @forwardStack.indexOf(item) + 1
       @forwardStack.remove(item) for item in list
       @stack.add(item, silent:true) for item in list
@@ -194,7 +199,7 @@ class Stacker.HistoryController
 
   pushState: (item) ->
     return unless item
-    state = cid:item.cid, namespace:"Stacker.HistoryController"
+    state = id:item.get('id'), namespace:"Stacker.HistoryController"
     @history.pushState(state, null, item.get('link'))
 
   clearForwardStack: ->

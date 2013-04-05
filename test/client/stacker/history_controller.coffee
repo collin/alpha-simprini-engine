@@ -32,7 +32,7 @@ test "stashes stack when history changes", ->
   controller = new Stacker.HistoryController(new Stacker.Cards, history, storage)
   controller.stack.add link:"HREF", html:"<html></html>"
   deepEqual JSON.parse(storage.getItem("Stacker-stash")), {
-    stack: [{link: "HREF", html:"<html></html>"}],
+    stack: [{link: "HREF", html:"<html></html>", id:controller.stack.first().get('id')}],
     forwardStack: []
   }
 
@@ -121,7 +121,7 @@ module "Stacker.HistoryController#pushState", HistoryTest
 test "pushes state to history", ->
   item = new Stacker.Card link:"HREF"
   @controller.stack.add item
-  deepEqual @controller.history.state, {cid:item.cid, namespace:"Stacker.HistoryController"}
+  deepEqual @controller.history.state, {id:item.get('id'), namespace:"Stacker.HistoryController"}
 
 # module "Stacker.HistoryController#reset", HistoryTest
 # test "resets history", ->
