@@ -7,4 +7,5 @@ test "it does some shit", ->
     </section>
   """
   app = new Stacker.App(root, new MockHistory)
-  console.log root.html()
+
+  ok false

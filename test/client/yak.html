@@ -1,0 +1,24 @@
+<html>
+<head>
+  <title>Yak Test</title>
+  <!-- DEPENDENCIES -->
+  <script src="/javascripts/jquery.js"></script>
+  <script src="/javascripts/underscore.js"></script>
+  <script src="/javascripts/backbone.js"></script>
+  <script src="/javascripts/coffee-script.js"></script>
+  <script src="/javascripts/ace.js"></script>
+
+  <!-- YAK TEST -->
+  <script src="/yak_test.coffee" type="text/coffeescript" charset="utf-8"></script>
+  <script type="text/coffeescript">
+  $ ->
+    editor = document.createElement('section')
+    editor.innerHTML = "# Get started..."
+    $(editor).appendTo document.body
+    YakTest.editor(editor)
+  </script>
+</head>
+<body>
+
+</body>
+</html>
