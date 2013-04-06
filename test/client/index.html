@@ -29,6 +29,13 @@
       pushState: (@state, title, url) ->
       replaceState: (@state, title, url) ->
 
+    class window.MockStorage
+      constructor: (@data={}) ->
+
+      setItem: (key, value) -> @data[key] = value
+      getItem: (key) -> @data[key]
+      removeItem: (key) -> @data[key] = undefined
+
     helper = (name, fn) -> window[name] = fn
     helper 'makeStackView', (stack=(new Stacker.Cards)) ->
       view = new Stacker.StackView model:stack, header: $("<header>")
@@ -36,13 +43,31 @@
 
     helper 'makeHistoryController', ->
       view = makeStackView()
-      controller = new Stacker.HistoryController(view.model, new MockHistory)
+      controller = new Stacker.HistoryController(view.model, new MockHistory, new MockStorage)
 
     helper 'matchModels', (list1, list2) ->
       deepEqual _.invoke(list1, 'toString'), _.invoke(list2, 'toString')
+    
+     helper 'makeCard', (html) ->
+      card = new Stacker.Card link:"URL"
+      html ||= """
+        <html attr='value'>
+          <head>
+            <title>TITLE</title>
+          </head>
+          <body>
+            <header>HEADER</header>
+            <section id="content">CONTENT</section>
+          </body>
+        </html>
+      """
+      Stacker.updateCardFromHtml(card, html)
+      card
+
   </script>
 
   <!-- Tests of library -->
+  <script src="/stacker/card.coffee" type="text/coffeescript"></script>
   <script src="/stacker/cards.coffee" type="text/coffeescript"></script>
   <script src="/stacker/view.coffee" type="text/coffeescript"></script>
   <script src="/stacker/stack_view.coffee" type="text/coffeescript"></script>

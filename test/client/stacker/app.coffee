@@ -8,4 +8,4 @@ test "it does some shit", ->
   """
   app = new Stacker.App(root, new MockHistory)
 
-  ok false
+  ok false, "Didn't do anything."

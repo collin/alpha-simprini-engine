@@ -76,6 +76,14 @@ test "renders top item at index-appropriate css position", ->
   equal topItem.css('top'), '60px'
   equal topItem.css('left'), '30px'
 
+test "renders top item at correct position when not all cards in stack are shown", ->
+  @view.model.last = => @view.model.at(1)
+  @view.render()
+  topItem = @view.find('.stack-item-top')
+  equal topItem.css('top'), '30px'
+  equal topItem.css('left'), '15px'
+
+
 module "Stacker.CardsView#render with multiple stacks in history", setup: ->
   @stack1 = new Stacker.Cards
   @item_11 = (@stack1.add link:"Item 1.1", stack:@stack1).last()
@@ -157,10 +165,16 @@ module "Stacker.CardsView#jumpStack", setup: ->
   stack.add new Stacker.Card link:"Item3", stack:stack
   @view = makeStackView(stack)
 
-test "jumps down to the targeted element", ->
+# test "jumps down to the targeted element", ->
+#   @view.jumpStack target: @view.find('.stack-item')[0]
+#   equal @view.model.length, 1
+#   matchModles @view.model.models, [@item1]
+
+test "triggers jump event", ->
+  currentTop = @view.model.last()
+  @view.model.on "jump", (count) =>
+    equal count, -2
   @view.jumpStack target: @view.find('.stack-item')[0]
-  equal @view.model.length, 1
-  deepEqual @view.model.models, [@item1]
 
 module "Stacker.CardsView listeners", setup: ->
   @view = makeStackView()

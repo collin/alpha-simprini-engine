@@ -8,6 +8,44 @@ module "Stacker.HistoryController", HistoryTest
 test "replaces history with checkpoint on creation", ->
   deepEqual @controller.history.state, Stacker.HistoryController.START
 
+test "doesn't replace history with checkpoint if state came from HistoryController", ->
+  history = new MockHistory
+  storage = new MockStorage
+  history.state = namespace:"Stacker.HistoryController"
+  controller = new Stacker.HistoryController(new Stacker.Cards, history, storage)
+  deepEqual controller.history.state, namespace:"Stacker.HistoryController"
+
+test "pops state if starting state came from stacker", ->
+  class _HistoryController extends Stacker.HistoryController
+    popstate: ({state}) -> deepEqual state, namespace:"Stacker.HistoryController"
+
+  history = new MockHistory
+  storage = new MockStorage
+  history.state = namespace:"Stacker.HistoryController"
+  controller = new _HistoryController(new Stacker.Cards, history, storage)
+
+module "Stacker.HistoryController#stash", HistoryTest
+test "stashes stack when history changes", ->
+  history = new MockHistory
+  storage = new MockStorage
+  history.state = namespace:"Stacker.HistoryController"
+  controller = new Stacker.HistoryController(new Stacker.Cards, history, storage)
+  controller.stack.add link:"HREF", html:"<html></html>"
+  deepEqual JSON.parse(storage.getItem("Stacker-stash")), {
+    stack: [{link: "HREF", html:"<html></html>", id:controller.stack.first().get('id')}],
+    forwardStack: []
+  }
+
+module "Stacker.HistoryController#loadStash", HistoryTest
+test "loads the stash", ->
+  @controller.storage.setItem "Stacker-stash", JSON.stringify(
+    stack: [{link: "HREF", html:"<html></html>"}],
+    forwardStack: []
+  )
+
+  @controller.loadStash()
+  equal @controller.stack.at(0).get('link'), "HREF"
+
 module "Stacker.HistoryController#popstate", HistoryTest
 test "noop if event has no state", ->
   equal @controller.popstate(state: null), false
@@ -83,7 +121,7 @@ module "Stacker.HistoryController#pushState", HistoryTest
 test "pushes state to history", ->
   item = new Stacker.Card link:"HREF"
   @controller.stack.add item
-  deepEqual @controller.history.state, {cid:item.cid}
+  deepEqual @controller.history.state, {id:item.get('id'), namespace:"Stacker.HistoryController"}
 
 # module "Stacker.HistoryController#reset", HistoryTest
 # test "resets history", ->
