@@ -12,6 +12,7 @@ test "toJSON", ->
   equal json.html, @html
   equal json.link, "URL"
   equal json.id, @card.get('id')
+  equal json.stackId, @card.get('stack').id
 
   equal json.header, undefined
   equal json.title, undefined
@@ -20,10 +21,12 @@ test "toJSON", ->
 
 test "fromJSON", ->
   json = @card.toJSON()
-  card = Stacker.Card.fromJSON(json)
+  card = Stacker.fromJSON(Stacker.Card, json)
 
   equal card.get('header').text(), "HEADER"
   equal card.get('title'), "TITLE"
   equal card.get('content').text(), "CONTENT"
   equal card.get('id'), @card.get('id')
+  equal card.get('stack').id, @card.get('stack').id
+  equal card.get('stackId'), undefined
   deepEqual card.get('htmlAttrs'), attr:'value'

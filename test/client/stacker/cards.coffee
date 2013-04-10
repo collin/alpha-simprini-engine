@@ -12,6 +12,12 @@ test "Is a Backbone Collection", ->
 test "#model is Stacker.Card", ->
   ok (new Stacker.Cards).model is Stacker.Card
 
+test "has a cid", ->
+  ok (new Stacker.Cards).cid
+
+test "has an id", ->
+  ok (new Stacker.Cards).id 
+
 test "toJSON", ->
   json = @cards.toJSON()
   equal json.length, 4
@@ -19,5 +25,5 @@ test "toJSON", ->
 
 test "fromJSON", ->
   json = @cards.toJSON()
-  cards = Stacker.Cards.fromJSON(json)
+  cards = Stacker.fromJSON(Stacker.Cards, json)
   equal cards.length, 4

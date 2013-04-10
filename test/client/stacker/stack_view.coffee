@@ -86,14 +86,14 @@ test "renders top item at correct position when not all cards in stack are shown
 
 module "Stacker.CardsView#render with multiple stacks in history", setup: ->
   @stack1 = new Stacker.Cards
-  @item_11 = (@stack1.add link:"Item 1.1", stack:@stack1).last()
-  @item_12 = (@stack1.add link:"Item 1.2", stack:@stack1).last()
-  @item_13 = (@stack1.add link:"Item 1.3", stack:@stack1).last()
+  @item_11 = (@stack1.add link:"Item 1.1",stack:@stack1).last()
+  @item_12 = (@stack1.add link:"Item 1.2",stack:@stack1).last()
+  @item_13 = (@stack1.add link:"Item 1.3",stack:@stack1).last()
 
   @stack2 = new Stacker.Cards
-  @item_21 = (@stack2.add link:"Item 2.1", stack:@stack2).last()
-  @item_22 = (@stack2.add link:"Item 2.2", stack:@stack2).last()
-  @item_23 = (@stack2.add link:"Item 2.3", stack:@stack2).last()
+  @item_21 = (@stack2.add link:"Item 2.1",stack:@stack2).last()
+  @item_22 = (@stack2.add link:"Item 2.2",stack:@stack2).last()
+  @item_23 = (@stack2.add link:"Item 2.3",stack:@stack2).last()
 
   @historyStack = new Stacker.Cards
   @historyStack.add @item_12

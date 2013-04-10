@@ -29,10 +29,10 @@ test "stashes stack when history changes", ->
   history = new MockHistory
   storage = new MockStorage
   history.state = namespace:"Stacker.HistoryController"
-  controller = new Stacker.HistoryController(new Stacker.Cards, history, storage)
-  controller.stack.add link:"HREF", html:"<html></html>"
+  controller = new Stacker.HistoryController(Stacker.alloc(Stacker.Cards), history, storage)
+  controller.stack.add link:"HREF", html:"<html></html>", stack:controller.stack
   deepEqual JSON.parse(storage.getItem("Stacker-stash")), {
-    stack: [{link: "HREF", html:"<html></html>", id:controller.stack.first().get('id')}],
+    stack: [{link: "HREF", html:"<html></html>", id:controller.stack.first().get('id'), stackId:controller.stack.id}],
     forwardStack: []
   }
 
@@ -54,10 +54,10 @@ test "noop unless event state is a client id", ->
   equal @controller.popstate(state: true), false
 
 test "wipes out stack if event state is start", ->
-  @stack.add(title: "itemA")
-  @stack.add(title: "itemB")
-  @stack.add(title: "itemC")
-  @forward.add(title:"itemD")
+  @stack.add(title: "itemA", stack:@stack)
+  @stack.add(title: "itemB", stack:@stack)
+  @stack.add(title: "itemC", stack:@stack)
+  @forward.add(title:"itemD", stack:@forward)
 
   itemA = @stack.at(0)
   itemB = @stack.at(1)
@@ -70,10 +70,10 @@ test "wipes out stack if event state is start", ->
   matchModels @forward.models, [itemA, itemB, itemC, itemD]
 
 test "shifts item into forward stack in correct order", ->
-  @stack.add(title:"itemA")
-  @stack.add(title:"itemB")
-  @stack.add(title:"itemC")
-  @forward.add(title:"itemD")
+  @stack.add(title:"itemA",stack:@stack)
+  @stack.add(title:"itemB",stack:@stack)
+  @stack.add(title:"itemC",stack:@stack)
+  @forward.add(title:"itemD",stack:@forward)
 
   item = @stack.at(0)
   # Items A and B will be shifter from the @stack
@@ -83,22 +83,22 @@ test "shifts item into forward stack in correct order", ->
   itemB = @stack.at(2)
   itemC = @forward.at(0)
 
-  @controller.popstate state:cid:item.cid
+  @controller.popstate state:id:item.get('id')
 
   equal @forward.length, 3
   matchModels @forward.models, [itemA, itemB, itemC]
 
 test "shifts item to stack if it is in the @forward stack in the correct order", ->
-  @stack.add   title:"itemA"
-  @forward.add title:"itemB"
-  @forward.add title:"itemC"
-  @forward.add title:"itemD"
+  @stack.add   title:"itemA", stack:@stack
+  @forward.add title:"itemB", stack:@forward
+  @forward.add title:"itemC", stack:@forward
+  @forward.add title:"itemD", stack:@forward
   itemA = @stack.at(0)
   itemB = @forward.at(0)
   itemC = @forward.at(1)
   itemD = @forward.at(2)
 
-  @controller.popstate state:cid:itemC.cid
+  @controller.popstate state:id:itemC.get('id')
 
   equal @forward.length, 1
   matchModels @stack.models, [itemA, itemB, itemC]
@@ -120,7 +120,7 @@ test "clears forward stack when stack is added to", ->
 module "Stacker.HistoryController#pushState", HistoryTest
 test "pushes state to history", ->
   item = new Stacker.Card link:"HREF"
-  @controller.stack.add item
+  @controller.stack.add item, stack:item
   deepEqual @controller.history.state, {id:item.get('id'), namespace:"Stacker.HistoryController"}
 
 # module "Stacker.HistoryController#reset", HistoryTest

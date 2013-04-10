@@ -2,6 +2,14 @@
 #= require backbone
 window.Stacker = {}
 
+Stacker.Repo = new Backbone.Collection
+Stacker.alloc = (klass, attrs) -> @Repo.add item = new klass(attrs); item
+Stacker.get = (id) -> @Repo.get(id)
+Stacker.flush = -> @Repo.set [], silent:true
+
+Stacker.fromJSON = (klass, json) ->
+  klass.fromJSON(json, Stacker.Repo)
+
 class Stacker.Card extends Backbone.Model
 
   constructor: ->
@@ -10,13 +18,19 @@ class Stacker.Card extends Backbone.Model
 
   _validate: -> true
 
-  @fromJSON: (data) ->
-    card = new Stacker.Card(data)
+  @fromJSON: (data, repository) ->
+    console.log "Stacker.Card#fromJSON", data
+    stackId = data.stackId
+    data.stackId = undefined
+    data.stack = repository.get(stackId)
+    card = Stacker.alloc Stacker.Card, data
     Stacker.updateCardFromHtml(card, data.html)
     card
 
   toJSON: ->
-    _.pick @attributes, 'html', 'link', 'id'
+    data = _.pick @attributes, 'html', 'link', 'id'
+    data.stackId = @get('stack').id
+    data
 
   toString: ->
     "<Stacker.Card #{@cid} #{@get 'title'}>"
@@ -27,11 +41,12 @@ class Stacker.Cards extends Backbone.Collection
   constructor: ->
     super
     @cid = _.uniqueId('c')
+    @id ||= _.uniqueId('id-')
 
   @fromJSON: (data) ->
-    cards = new this
+    cards = Stacker.alloc(this)
     for item in data
-      cards.add Stacker.Card.fromJSON(item)
+      cards.add Stacker.fromJSON(Stacker.Card, item)
     cards
 
 class Stacker.View extends Backbone.View
@@ -97,7 +112,7 @@ class Stacker.StackView extends Stacker.View
     stack = if last = @model.last()
       last.get('stack')
 
-    stack ||= new Stacker.Cards
+    stack ||= Stacker.alloc(Stacker.Cards)
 
     lastIndex = stack.indexOf( last )
 
@@ -142,13 +157,17 @@ class Stacker.HistoryController
   constructor: (@stack, @history, @storage) ->
     console.log "Starting State", @history.state
 
-    @forwardStack = new Stacker.Cards
+    @forwardStack = Stacker.alloc(Stacker.Cards)
 
     @loadStash() if @_madeState(@history.state)
 
     @stack.on 'add', => @clearForwardStack()
     @stack.on 'add', (item) => @pushState(item)
-    @stack.on 'jump', (count) => history.go(count) 
+    @stack.on 'jump', (count) => history.go(count)
+
+    for stack in [@stack, @forwardStack]
+      do (stack) =>
+        stack.on 'add', (model) -> model?.set('stack', stack)
 
     @stack.on 'add remove change', @stash
 
@@ -214,15 +233,16 @@ class Stacker.NavigationController
 
   link: (event) =>
     link = event.target
-    stack = @history.currentStack() || new Stacker.Cards
-    stack = new Stacker.Cards if $(link).is('[stacker=reset]')
-    card = new Stacker.Card link:link.href, stack:stack
+    stack = @history.currentStack() || Stacker.alloc(Stacker.Cards)
+    stack = Stacker.alloc(Stacker.Cards) if $(link).is('[stacker=reset]')
+    card = Stacker.alloc(Stacker.Card, link:link.href, stack:stack)
 
     currentCard = @history.currentCard()
     if (stack.include currentCard) && (stack.last() isnt currentCard)
       stack.set stack.slice 0, stack.indexOf(currentCard) + 1, silent: true
-    stack.add card
     @stack.add card
+    stack.add card
+    card.set('stack', stack)
     event.preventDefault()
     @network.fetchCardData(card)
 
@@ -258,8 +278,8 @@ class Stacker.App
     options.history ||= window.history
     options.storage ||= window.sessionStorage
     
-    @networkController = new Stacker.NetworkController
-    @historyStack = new Stacker.Cards
+    @networkController = Stacker.NetworkController
+    @historyStack = Stacker.alloc(Stacker.Cards)
     @historyController = new Stacker.HistoryController(
       @historyStack, options.history, options.storage
     )
@@ -270,87 +290,3 @@ class Stacker.App
       model:@historyStack, 
       el:options.container, 
       header:options.header
-
-  #   content = $("#content")
-  #   content.after stackContainer = $("<section id='content'></section>")
-
-  #   @stack = new Stacker.Cards
-  #   @forwardStack = new Stacker.Cards
-  #   @stackView = new Stacker.CardsView model:@stack, el:stackContainer
-
-  #   $(document).delegate "a", "click", (event) =>
-  #     console.log "Stacker intercepted a click", event.target, event
-
-  #     target = $ event.target
-  #     link = target.closest('a')[0]
-
-  #     # reset the whole stack, maybe clicked a tab link
-  #     if target.is("[stacker=reset]")
-  #       @stack.set([])
-  #       @forwardStack.set([])
-  #       @stackView.render()
-  #       @addStack(event)
-  #     # refresh the top stack item content, maybe set a filter
-  #     else if link.pathname is location.pathname
-  #       @refreshStackContent(link.href)
-  #       event.preventDefault()
-  #       history.replaceState history.state, null, link.href
-  #     else if target.is "[data-method]" # Rails ajax input
-  #       alert "THWHATSS"
-  #       $.rails.handleRemote(link).then =>
-  #         alert("STFTAT")
-  #       event.preventDefault()
-  #     else
-  #       @addStack(event)
-        
-  #   Card = new Stacker.Card
-  #     header: $("header:first")[0]
-  #     content: content[0]
-  #     title: $("title").text()
-  #     htmlAttrs: {}
-  #   @stack.add Card
-
-  #   @stackView.render()
-
-  #   @stack.on 'add', (item) =>
-  #     console.log "pushState", {cid:item.cid}, null, item.get('link')
-  #     history.pushState({cid:item.cid}, null, item.get('link'))
-
-  #   @stack.on 'remove', (item) =>
-
-  # refreshStackContent: (href) ->
-  #   Card = @stack.last()
-  #   $.get(href).then (html) ->
-  #     _doc = document.createElement('html')
-  #     _doc.innerHTML = html
-  #     doc = $ _doc
-      
-  #     Card.set {content: null}, silent:true
-  #     Card.set content: doc.find("#content")[0]
-
-  # addStack: (event) ->
-  #   event.preventDefault()
-  #   link = event.target
-  #   Card = new Stacker.Card
-  #   Card.set link: link.href
-  #   @stack.add Card
-  #   $.get(link.href).then (html) =>
-  #     _doc = document.createElement('html')
-  #     _doc.innerHTML = html
-  #     doc = $ _doc
-  #     htmlAttrs = {}
-  #     htmlTag = html.match(/<html(.+?)>/)
-  #     pairs = htmlTag[1].match(/\w+="\w+"/g)
-  #     for pair in pairs
-  #       [X, key, value] = pair.match(/(\w+)="(\w+)"/)
-  #       htmlAttrs[key] = value
-
-  #     Card.set
-  #       header: doc.find("header:first")[0]
-  #       content: doc.find("#content")[0]
-  #       title: doc.find("title").text()
-  #       htmlAttrs: htmlAttrs
-
-
-# jQuery ->
-#   Stacker.app = new Stacker.App el: $("#content")

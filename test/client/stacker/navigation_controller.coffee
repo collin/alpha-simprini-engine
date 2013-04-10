@@ -32,7 +32,7 @@ test "intercepts reset link clicks, which creates a new stack", ->
   @click ".basic-link"
   starterStack = @history.currentStack()
   @click "[stacker=reset]"
-  equal @stack.length, 2
-  equal starterStack.length, 1
-  equal @history.currentStack().length, 1
-  notEqual @history.currentStack().cid, starterStack.cid
+  equal @stack.length, 2, "HistoryStack extends by one."
+  equal starterStack.length, 1, "The previous stack doesn't grow."
+  notEqual @history.currentStack().cid, starterStack.cid, "We're working in a new stack."
+  equal @history.currentStack().length, 1, "And that stack isn't empty."
