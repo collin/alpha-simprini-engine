@@ -3,7 +3,7 @@
 window.Stacker = {}
 
 Stacker.Repo = new Backbone.Collection
-Stacker.alloc = (klass, attrs) -> @Repo.add item = new klass(attrs); item
+Stacker.alloc = (klass, args...) -> @Repo.add item = new klass(args...); item
 Stacker.get = (id) -> @Repo.get(id)
 Stacker.flush = -> @Repo.set [], silent:true
 
@@ -22,9 +22,10 @@ class Stacker.Card extends Backbone.Model
     console.log "Stacker.Card#fromJSON", data
     stackId = data.stackId
     data.stackId = undefined
-    data.stack = repository.get(stackId)
+    stack = data.stack = repository.get(stackId) || Stacker.alloc(Stacker.Cards, [], id:stackId)
     card = Stacker.alloc Stacker.Card, data
     Stacker.updateCardFromHtml(card, data.html)
+    stack.add card
     card
 
   toJSON: ->
@@ -38,10 +39,10 @@ class Stacker.Card extends Backbone.Model
 class Stacker.Cards extends Backbone.Collection
   model: Stacker.Card
 
-  constructor: ->
+  constructor: (models=[], options={}) ->
     super
     @cid = _.uniqueId('c')
-    @id ||= _.uniqueId('id-')
+    @id ||= options.id || _.uniqueId('id-')
 
   @fromJSON: (data) ->
     cards = Stacker.alloc(this)
@@ -278,7 +279,7 @@ class Stacker.App
     options.history ||= window.history
     options.storage ||= window.sessionStorage
     
-    @networkController = Stacker.NetworkController
+    @networkController = new Stacker.NetworkController
     @historyStack = Stacker.alloc(Stacker.Cards)
     @historyController = new Stacker.HistoryController(
       @historyStack, options.history, options.storage
