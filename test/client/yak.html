@@ -12,10 +12,7 @@
   <script src="/yak_test.coffee" type="text/coffeescript" charset="utf-8"></script>
   <script type="text/coffeescript">
   $ ->
-    editor = document.createElement('section')
-    editor.innerHTML = "# Get started..."
-    $(editor).appendTo document.body
-    YakTest.editor(editor)
+    window.Yak = new YakTest.App()
   </script>
 </head>
 <body>

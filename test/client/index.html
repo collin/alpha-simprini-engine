@@ -25,6 +25,7 @@
 
   <!-- TEST HELPERS -->
   <script type="text/coffeescript">
+    helper = (name, fn) -> window[name] = fn
     class window.MockHistory
       pushState: (@state, title, url) ->
       replaceState: (@state, title, url) ->
@@ -36,7 +37,6 @@
       getItem: (key) -> @data[key]
       removeItem: (key) -> @data[key] = undefined
 
-    helper = (name, fn) -> window[name] = fn
     helper 'makeStackView', (stack=Stacker.alloc(Stacker.Cards)) ->
       view = new Stacker.StackView model:stack, header: $("<header>")
       view.render()
