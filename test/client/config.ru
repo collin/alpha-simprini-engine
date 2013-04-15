@@ -43,7 +43,10 @@ class TestApp < Rack::WebSocket::Application
     @listener and @listener.stop
   end
 
+  def any(items) items.first end
+
   def on_modification(modified, added, removed)
+    return unless any modified + added + removed
     logger.info "modified: #{modified}"
     send_data JSON.dump(name: 'restart')
   end

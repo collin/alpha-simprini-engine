@@ -119,7 +119,7 @@ test "clears forward stack when stack is added to", ->
 
 module "Stacker.HistoryController#pushState", HistoryTest
 test "pushes state to history", ->
-  item = new Stacker.Card link:"HREF"
+  item = makeCard()
   @controller.stack.add item, stack:item
   deepEqual @controller.history.state, {id:item.get('id'), namespace:"Stacker.HistoryController"}
 

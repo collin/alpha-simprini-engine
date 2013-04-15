@@ -3,6 +3,8 @@
 window.Stacker = {}
 
 Stacker.Repo = new Backbone.Collection
+# Hack to let us stick collections into this collection
+Stacker.Repo._prepareModel = (model) -> model
 Stacker.alloc = (klass, args...) -> @Repo.add item = new klass(args...); item
 Stacker.get = (id) -> @Repo.get(id)
 Stacker.flush = -> @Repo.set [], silent:true
@@ -160,22 +162,24 @@ class Stacker.HistoryController
 
     @forwardStack = Stacker.alloc(Stacker.Cards)
 
-    @loadStash() if @_madeState(@history.state)
+    if @_madeState(@history.state)
+      @loadStash() 
 
     @stack.on 'add', => @clearForwardStack()
     @stack.on 'add', (item) => @pushState(item)
     @stack.on 'jump', (count) => history.go(count)
 
-    for stack in [@stack, @forwardStack]
-      do (stack) =>
-        stack.on 'add', (model) -> model?.set('stack', stack)
+    # for stack in [@stack, @forwardStack]
+    #   do (stack) =>
+    #     stack.on 'add', (model) -> model?.set('stack', stack)
 
     @stack.on 'add remove change', @stash
 
     $(window).on 'popstate', (event) => @popstate(event.originalEvent)
 
     if @_madeState(@history.state)
-      @popstate @history
+      # defer loading the state or it doesn't load
+      _.defer => @popstate @history
     else
       @history.replaceState @START, null, location.href
 
@@ -247,7 +251,7 @@ class Stacker.NavigationController
     event.preventDefault()
     @network.fetchCardData(card)
 
-Stacker.updateCardFromHtml = (card, html) ->
+Stacker.updateCardFromHtml = (card, html="") ->
   _doc = document.createElement('html')
   _doc.innerHTML = html
   doc = $ _doc
