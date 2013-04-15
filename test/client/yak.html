@@ -1,12 +1,102 @@
 <html>
 <head>
+  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
   <title>Yak Test</title>
   <!-- DEPENDENCIES -->
   <script src="/javascripts/jquery.js"></script>
+  <script src="/javascripts/jwerty.js"></script>
+  <script src="/javascripts/URI.js"></script>
   <script src="/javascripts/underscore.js"></script>
   <script src="/javascripts/backbone.js"></script>
   <script src="/javascripts/coffee-script.js"></script>
+  <script src="/javascripts/js2coffee.js"></script>
   <script src="/javascripts/ace.js"></script>
+
+  <style type="text/less">
+    body {
+      margin: 0;
+      font-family: "Lucida Grande", "Verdana", "Helvetica", "sans-serif";
+    }
+
+    ol, ul, li {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-size: 1em;
+      margin: 0;
+      padding: 0;
+    }
+
+    input {
+      min-width: 250px;
+    }
+
+    label {
+      display: block;
+    }
+
+    * { box-sizing: content-box; }
+    .yak-suite {
+      width: 100%;
+      height: 100%;
+    }
+    .yak-editor {
+      width: 100%;
+      height: 70%;
+      background: blue;
+    }
+
+    .yak-browser {
+      white-space: nowrap;
+        height: 30%;
+
+      > section {
+        overflow: scroll;
+        height: 100%;
+        > header {
+          font-weight: bold;
+          background-color: #cacaca;
+        }
+        display: inline-block;
+        vertical-align: top;
+      }
+
+      .yak-helpers {
+        width: 20%;
+      }
+
+      .yak-modules {
+        width: 20%;
+      }
+
+      .yak-tests {
+        width: 30%;
+      }
+
+      .yak-methods {
+        width: 30%;
+      }
+    }
+
+    .yak-console {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background-color: white;
+      .yak-console-input {
+        padding-left: 10px;
+        &:before {
+          content: ">";
+          display: inline-block;
+        }
+      }
+    }
+  </style>
+
+  <script src="/javascripts/less.js"></script>
 
   <!-- YAK TEST -->
   <script src="/yak_test.coffee" type="text/coffeescript" charset="utf-8"></script>
@@ -16,6 +106,7 @@
   </script>
 </head>
 <body>
+
 
 </body>
 </html>

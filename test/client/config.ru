@@ -54,9 +54,29 @@ class NeverCache
 
   def call(env)
     status, headers, body = @app.call(env)
-    headers.delete("Last-Modified")
     headers["Cache-Control"] = 'no-cache'
     [status, headers, body]
+  end
+end
+
+module YakTest
+  require 'sinatra'
+  class Application < Sinatra::Base
+    post '/' do
+      suite_name = params[:suite_name]
+      puts "Writing '#{suite_name}.yak'..."
+      raise "Missing parameter suite_name" unless suite_name
+      File.open "./#{suite_name}.yak", "w+" do |f|
+        f.write params[:dump]
+      end
+      puts "Done!"
+    end
+
+    get '/' do
+      suite_name = params[:suite_name]
+      puts "Loading '#{suite_name}.yak'"
+      open("./#{suite_name}.yak").read
+    end
   end
 end
 
@@ -64,6 +84,10 @@ use NeverCache
 
 map '/control' do
   run TestApp.new
+end
+
+map '/suites' do
+  run YakTest::Application
 end
 
 map '/qunit' do

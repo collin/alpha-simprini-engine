@@ -47,7 +47,7 @@
 
     helper 'matchModels', (list1, list2) ->
       deepEqual _.invoke(list1, 'toString'), _.invoke(list2, 'toString')
-    
+
      helper 'makeCard', (html) ->
       card = Stacker.alloc(Stacker.Card, link:"URL", stack: Stacker.alloc(Stacker.Cards))
       html ||= """
