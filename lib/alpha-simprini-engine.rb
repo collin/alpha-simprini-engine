@@ -78,7 +78,8 @@ module AlphaSimpriniEngine
       # end
     end
 
-    config.watchable_files += Dir.glob\
+    config.watchable_files += Dir.glob(
       File.join(File.dirname(__FILE__), '**', '*.rb')
+    )
   end
 end

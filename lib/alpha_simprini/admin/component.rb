@@ -75,6 +75,7 @@ class AlphaSimprini::Admin::Component
     child_resource.setup!(&config) if block_given?
 
     _singular_model_name = singular_model_name
+    child_resource._controller
     child_resource.controller do
       optional_belongs_to _singular_model_name
     end

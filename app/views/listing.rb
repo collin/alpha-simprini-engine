@@ -192,7 +192,7 @@ module Views::Listing
     unless no_actions
       view? and link_to "View", _resource_path(item)
       edit? and link_to "Edit", _edit_resource_path(item)
-      delete? and link_to "Delete", _resource_path(item), class:'destructive', method: 'delete', confirm: 'Are you sure you want to delete this?'
+      delete? and link_to "Delete", _resource_path(item), class:'destructive', method: 'delete', confirm: 'Are you sure you want to delete this?', remote:true
     end
     self.class.action_items.each do |(name, action, options, block)|
       if !(action || block)

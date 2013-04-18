@@ -1,14 +1,22 @@
 NavigationTest = setup: ->
   @dom = $ """
     <section>
+      <!-- Bunch of Links -->
       <a href='#' class='basic-link'></a>
       <a href='#' class='other-link'></a>
       <a href='#' class='third-link'></a>
       <a href='#' class='fourth-link'></a>
       <a href='#' stacker='reset'></a>
 
+
+      <!-- Bunch of Query Links -->
       <a href='?search=query#' class='local-query'></a>
       <a href='somewhere?search=query#' class='navigating-query'></a>
+
+
+      <!-- Rails style ujs links -->
+      <a href="#" data-method='delete' data-confirm='Oh Really?'></a>      
+      <a href="#" data-method='put' data-confirm='Oh Really?'></a>
     </section>
   """
   @controller = new Stacker.NavigationController(

@@ -70,6 +70,7 @@ class Views::Resources::ShowHasMany < AlphaSimprini::Widget
 
   def form_for(resource, options={}, &block)
     options[:builder] ||= FormBuilder.wrapping(NestedForm::SimpleBuilder)
+    options[:remote] ||= true
     text(helpers.form_for(resource, options) do |f|
       instance_exec(f, &block) if block_given?  
     end << helpers.send(:after_nested_form_callbacks) )

@@ -30,6 +30,7 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
 
       controller.class_eval do
         inherit_resources
+        respond_to :html, :json
         include AlphaSimprini::Admin::PathHelpers
 
         before_filter :wipe_blank_date_filters
@@ -66,11 +67,32 @@ class AlphaSimprini::Admin::Resource < AlphaSimprini::Admin::Component
         helper_method :parent
         
         def create
-          create! { collection_path }
+          create! do |success, failure|
+            success.html { redirect_to collection_path }
+
+            success.js { render nothing:true, status:200, location:collection_path }
+            failure.js { render :new, status: 422 }
+          end
         end
 
         def update
-          update! { collection_path }
+          update! do |success, failure|
+            success.html { redirect_to collection_path }
+
+            success.js { render nothing:true, status:200, location:collection_path }
+            failure.js { render :edit, status: 422 }
+          end
+        end
+
+        def destroy
+          destroy! do |format|
+            format.html {
+              redirect_to collection_path
+            }
+            format.js {
+              render nothing: true, status: 200, location: collection_path              
+            }
+          end
         end
 
         def resource_name
